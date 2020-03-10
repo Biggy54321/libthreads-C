@@ -8,7 +8,7 @@
  */
 #define thread_exit(return_value)               \
     {                                           \
-        return (void *)return_value;          \
+        return (void *)return_value;            \
     }
 
 #endif

@@ -9,4 +9,6 @@
 
 #include "./thread_exit.h"
 
+#include "./thread_self.h"
+
 #endif

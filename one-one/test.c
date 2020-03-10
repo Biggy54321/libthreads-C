@@ -2,9 +2,10 @@
 #include <string.h>
 #include <unistd.h>
 #include "./thread.h"
+#include <sys/types.h>
+#include <signal.h>
 
-/* Func1tion to print string */
-#define print(str) write(1, str, strlen(str))
+#define print(str) write(STDOUT_FILENO, str, strlen(str))
 
 void *func1(void *arg) {
 

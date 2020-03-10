@@ -13,15 +13,12 @@
  * @brief Returns the stack limit of a thread in bytes
  * @return Size in bytes
  */
-static uint64_t _get_stack_limit() {
+static uint64_t _get_stack_limit(void) {
 
     struct rlimit stack_limit;
 
     /* Get the stack resource limit */
-    if (getrlimit(RLIMIT_STACK, &stack_limit) == -1) {
-
-        return -1;
-    }
+    getrlimit(RLIMIT_STACK, &stack_limit);
 
     /* Return the current limit */
     return stack_limit.rlim_cur;
@@ -133,17 +130,6 @@ ThreadReturn thread_create(
 
     /* Get the maximum stack limit */
     thread_block->stack_limit = _get_stack_limit();
-    /* Check for errors */
-    if (thread_block->stack_limit == -1) {
-
-        /* Set the thread handle to NULL */
-        *thread = NULL;
-        /* Free the allocated memory */
-        free(thread_block);
-
-        return THREAD_FAIL;
-    }
-
     /* Allocate the stack */
     thread_block->stack_base = _allocate_stack(thread_block->stack_limit);
     /* Check for errors */
@@ -165,10 +151,10 @@ ThreadReturn thread_create(
                                     CLONE_VM | CLONE_FS | CLONE_FILES |
                                     CLONE_SIGHAND | CLONE_THREAD |
                                     CLONE_SYSVSEM | CLONE_PARENT_SETTID |
-                                    CLONE_CHILD_CLEARTID,
+                                    CLONE_CHILD_CLEARTID | CLONE_SETTLS,
                                     thread_block,
                                     &thread_block->futex_word,
-                                    NULL,
+                                    thread_block,
                                     &thread_block->futex_word);
     /* Check for errors */
     if (thread_block->thread_id == -1) {
