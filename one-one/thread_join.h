@@ -6,6 +6,6 @@
 /**
  * Thread join signature
  */
-ThreadReturn thread_join(Thread thread, uint32_t *return_value);
+ThreadReturn thread_join(Thread thread, ptr_t *return_value);
 
 #endif

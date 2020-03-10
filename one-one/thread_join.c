@@ -7,8 +7,6 @@
 
 #include "./thread_join.h"
 
-#include <stdio.h>
-
 /**
  * @brief Futex syscall
  * @param[in] uaddr Pointer to the futex word
@@ -43,7 +41,7 @@ static void _deallocate_stack(ptr_t stack_base, uint64_t stack_limit) {
  * @param[in] thread Thread handle
  * @param[out] return_value Pointer to the return value
  */
-ThreadReturn thread_join(Thread thread, uint32_t *return_value) {
+ThreadReturn thread_join(Thread thread, ptr_t *return_value) {
 
     ThreadControlBlock *thread_block;
     int ret_val;

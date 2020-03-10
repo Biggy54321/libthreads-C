@@ -11,7 +11,7 @@ typedef void *ptr_t;
 /**
  * Starting thread routine
  */
-typedef int (*thread_start_t)(void *);
+typedef void *(*thread_start_t)(void *);
 
 /**
  * Thread control block definition
@@ -34,7 +34,7 @@ typedef struct _ThreadControlBlock {
     ptr_t argument;
 
     /* Thread return value */
-    uint32_t return_value;
+    ptr_t return_value;
 
     /* Futex word */
     int32_t futex_word;
