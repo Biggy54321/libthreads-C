@@ -3,6 +3,9 @@
 
 #include "./thread_types.h"
 
-Thread thread_self();
+/**
+ * Thread self signature
+ */
+Thread thread_self(void);
 
 #endif
