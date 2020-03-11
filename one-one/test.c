@@ -11,14 +11,14 @@ void *func1(void *arg) {
 
     print("In thread1\n");
 
-    thread_exit(-1);
+    thread_exit((void *)128);
 }
 
 void *func2(void *arg) {
 
     print("In thread2\n");
 
-    thread_exit(456);
+    thread_exit((void *)256);
 }
 
 void main() {

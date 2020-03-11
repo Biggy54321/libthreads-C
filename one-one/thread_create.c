@@ -92,9 +92,15 @@ int _thread_wrapper(void *argument) {
     /* Get the address of the thread control block */
     thread_block = (ThreadControlBlock *)argument;
 
-    /* Launch the thread */
-    thread_block->return_value = thread_block->start_routine(
-            thread_block->argument);
+    /* Set the exit jump location */
+    if (!setjmp(thread_block->exit_env)) {
+
+        /* Launch the thread */
+        thread_block->return_value = thread_block->start_routine(
+                thread_block->argument);
+    }
+
+    return 0;
 }
 
 /**

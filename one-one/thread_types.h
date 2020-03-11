@@ -2,6 +2,7 @@
 #define _THREAD_TYPES_H_
 
 #include <stdint.h>
+#include <setjmp.h>
 
 /**
  * Pointer definition
@@ -15,11 +16,10 @@ typedef void *(*thread_start_t)(void *);
 
 /**
  * Thread control block definition
+ * @note The structure members are placed so as to prevent any padding
+ *       to be inserted by the compiler
  */
 typedef struct _ThreadControlBlock {
-
-    /* Thread identifier */
-    uint32_t thread_id;
 
     /* Stack base pointer */
     ptr_t stack_base;
@@ -33,14 +33,20 @@ typedef struct _ThreadControlBlock {
     /* Thread argument */
     ptr_t argument;
 
-    /* Futex word */
-    int32_t futex_word;
-
-    /* Padding for stack canary */
-    uint64_t __pad;
-
     /* Thread return value */
     ptr_t return_value;
+
+    /* Padding for stack guard */
+    uint64_t __pad;
+
+    /* Futex word */
+    uint32_t futex_word;
+
+    /* Thread identifier */
+    uint32_t thread_id;
+
+    /* Exit jump environment */
+    jmp_buf exit_env;
 
 } ThreadControlBlock;
 

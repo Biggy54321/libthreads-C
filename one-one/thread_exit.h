@@ -2,13 +2,11 @@
 #define _THREAD_EXIT_H_
 
 #include "./thread_types.h"
+#include "./thread_self.h"
 
 /**
- * Thread exit definition
+ * Thread exit signature
  */
-#define thread_exit(return_value)               \
-    {                                           \
-        return (void *)return_value;            \
-    }
+void thread_exit(ptr_t return_value);
 
 #endif
