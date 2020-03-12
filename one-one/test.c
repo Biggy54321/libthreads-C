@@ -16,11 +16,11 @@ void handler(int sig) {
 
 void *func1(void *arg) {
 
-    print("In thread1\n");
-
     signal(SIGUSR1, handler);
 
     sleep(5);
+
+    print("In thread1\n");
 
     return (void *)128;
 }
@@ -41,6 +41,8 @@ void main() {
 
     thread_create(&td1, func1, NULL);
     thread_create(&td2, func2, NULL);
+
+    sleep(1);
 
     thread_kill(td1, SIGUSR1);
 
