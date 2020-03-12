@@ -36,7 +36,7 @@ typedef struct _ThreadControlBlock {
     /* Thread return value */
     ptr_t return_value;
 
-    /* Padding for stack guard */
+    /* Padding for stack canary */
     uint64_t __pad;
 
     /* Futex word */
