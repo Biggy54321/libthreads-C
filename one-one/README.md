@@ -1,5 +1,9 @@
 # One to one user threading model
 
+**libthreads-C** is a user level threading library which can be used on 64 bit
+systems only. The following functionalities are provided by the one-one
+threading model of the library.
+
 ## Thread create
 
 * In one to one model each **user thread** will **map** to one **kernel
