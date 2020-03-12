@@ -7,16 +7,29 @@
 
 #define print(str) write(STDOUT_FILENO, str, strlen(str))
 
+void handler(int sig) {
+
+    print("Inside the handler\n");
+
+    thread_exit((void *)128);
+}
+
 void *func1(void *arg) {
 
     print("In thread1\n");
 
-    thread_exit((void *)128);
+    signal(SIGUSR1, handler);
+
+    sleep(5);
+
+    return (void *)128;
 }
 
 void *func2(void *arg) {
 
     print("In thread2\n");
+
+    sleep(1);
 
     thread_exit((void *)256);
 }
@@ -28,6 +41,8 @@ void main() {
 
     thread_create(&td1, func1, NULL);
     thread_create(&td2, func2, NULL);
+
+    thread_kill(td1, SIGUSR1);
 
     thread_join(td1, &ret1);
     thread_join(td2, &ret2);

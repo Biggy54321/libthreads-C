@@ -17,7 +17,7 @@ typedef void *(*thread_start_t)(void *);
 /**
  * Thread control block definition
  * @note The structure members are placed so as to prevent any padding
- *       to be inserted by the compiler
+ *       inserted by the compiler
  */
 typedef struct _ThreadControlBlock {
 
@@ -56,6 +56,24 @@ typedef struct _ThreadControlBlock {
 #define THREAD_CONTROL_BLOCK_SIZE (sizeof(ThreadControlBlock))
 
 /**
+ * Thread handle for user handling
+ */
+typedef ThreadControlBlock *Thread;
+
+/**
+ * Thread spinlocks definition
+ */
+typedef struct _ThreadSpinLock {
+
+    /* Owner of the lock */
+    Thread owner_thread;
+
+    /* The lock word on which to perform locking */
+    uint32_t lock_word;
+
+} ThreadSpinLock;
+
+/**
  * Return statuses of the thread library
  */
 typedef enum _ThreadReturn {
@@ -65,9 +83,5 @@ typedef enum _ThreadReturn {
 
 } ThreadReturn;
 
-/**
- * Thread handle for user handling
- */
-typedef ThreadControlBlock *Thread;
 
 #endif

@@ -11,4 +11,8 @@
 
 #include "./thread_self.h"
 
+#include "./thread_spinlock.h"
+
+#include "./thread_kill.h"
+
 #endif

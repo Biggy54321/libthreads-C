@@ -50,7 +50,7 @@ static ptr_t _allocate_stack(uint64_t stack_limit) {
         return NULL;
     }
 
-    /* Protect the lowest one page */
+    /* Allocate the stack guard */
     if (mprotect(stack_base, page_size, PROT_NONE) == -1) {
 
         /* Unmap the previously mapped region */
