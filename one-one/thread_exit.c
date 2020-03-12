@@ -1,5 +1,6 @@
-#include "./thread_exit.h"
 #include <stdlib.h>
+
+#include "./thread_exit.h"
 
 /* Return value of the long jump (must be any non zero integer) */
 #define LONGJMP_RET_VAL (1)
