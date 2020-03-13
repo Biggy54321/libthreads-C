@@ -50,10 +50,7 @@ static inline int _futex(int *uaddr, int futex_op, int val) {
 ThreadReturn thread_spinlock_init(ThreadSpinLock *spinlock) {
 
     /* Check for errors */
-    if (!spinlock) {
-
-        return THREAD_FAIL;
-    }
+    RETURN_FAIL_IF(!spinlock);
 
     /* Set the lock word status to not taken */
     spinlock->lock_word = SPINLOCK_NOT_TAKEN;
@@ -75,10 +72,7 @@ ThreadReturn thread_spinlock(ThreadSpinLock *spinlock) {
     int futex_ret;
 
     /* Check for errors */
-    if (!spinlock) {
-
-        return THREAD_FAIL;
-    }
+    RETURN_FAIL_IF(!spinlock);
 
     /* Get the thread handle */
     thread = thread_self();
@@ -107,10 +101,7 @@ ThreadReturn thread_spinlock(ThreadSpinLock *spinlock) {
         /* Wait till the lock is not released by the owner */
         futex_ret = _futex(&spinlock->lock_word, FUTEX_WAIT, SPINLOCK_TAKEN);
         /* Check for errors */
-        if ((futex_ret == -1) && (errno != EAGAIN)) {
-
-            return THREAD_FAIL;
-        }
+        RETURN_FAIL_IF((futex_ret == -1) && (errno != EAGAIN));
     }
 
     return THREAD_OK;
@@ -125,10 +116,7 @@ ThreadReturn thread_spinunlock(ThreadSpinLock *spinlock) {
     int futex_ret;
 
     /* Check for errors */
-    if (!spinlock) {
-
-        return THREAD_FAIL;
-    }
+    RETURN_FAIL_IF(!spinlock);
 
     /* Release the spinlock */
     if (ATOMIC_XCHG(&spinlock->lock_word,
@@ -141,10 +129,7 @@ ThreadReturn thread_spinunlock(ThreadSpinLock *spinlock) {
         /* Wake up the waiting threads */
         _futex(&spinlock->lock_word, FUTEX_WAKE, NB_WAKEUP_PROCESSES);
         /* Check for errors */
-        if ((futex_ret == -1) && (errno != EAGAIN)) {
-
-            return THREAD_FAIL;
-        }
+        RETURN_FAIL_IF((futex_ret == -1) && (errno != EAGAIN));
     }
 
     return THREAD_OK;

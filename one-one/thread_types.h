@@ -83,5 +83,9 @@ typedef enum _ThreadReturn {
 
 } ThreadReturn;
 
+/**
+ * Macro to check error condition and return failure status
+ */
+#define RETURN_FAIL_IF(cond) {if ((cond)) { return THREAD_FAIL; }}
 
 #endif

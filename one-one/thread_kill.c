@@ -29,20 +29,13 @@ ThreadReturn thread_kill(Thread thread, int sig_num) {
     uint32_t thread_group_id;
 
     /* Check for errors */
-    if (!thread) {
-
-        return THREAD_FAIL;
-    }
+    RETURN_FAIL_IF(!thread);
 
     /* Get the thread group id */
     thread_group_id = getpid();
 
     /* Send the kill signal to the target thread */
-    if (_tgkill(thread_group_id, thread->thread_id, sig_num) == -1) {
-
-        /* Return error status */
-        return THREAD_FAIL;
-    }
+    RETURN_FAIL_IF(_tgkill(thread_group_id, thread->thread_id, sig_num) == -1);
 
     /* Return success status */
     return THREAD_OK;

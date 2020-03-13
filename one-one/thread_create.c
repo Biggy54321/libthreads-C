@@ -121,23 +121,15 @@ ThreadReturn thread_create(
     /* Allocate the thread control block */
     thread_block = (ThreadControlBlock *)malloc(THREAD_CONTROL_BLOCK_SIZE);
     /* Check for errors */
-    if (!thread_block) {
+    RETURN_FAIL_IF(!thread_block);
 
-        return THREAD_FAIL;
-    }
+    /* Check if the arguments are valid */
+    RETURN_FAIL_IF(!start_routine);
+    RETURN_FAIL_IF(!start_routine);
 
     /* Set the thread handle */
-    if (!thread) {
-
-        return THREAD_FAIL;
-    }
     *thread = (Thread)thread_block;
 
-    /* Check if the start routine is valid */
-    if (!start_routine) {
-
-        return THREAD_OK;
-    }
     /* Initialize the start routine */
     thread_block->start_routine = start_routine;
     /* Initialize the start routine arguments */
@@ -150,8 +142,6 @@ ThreadReturn thread_create(
     /* Check for errors */
     if (!thread_block->stack_base) {
 
-        /* Set the thread handle to NULL */
-        *thread = NULL;
         /* Free the allocated memory */
         free(thread_block);
 
@@ -174,8 +164,6 @@ ThreadReturn thread_create(
     /* Check for errors */
     if (thread_block->thread_id == -1) {
 
-        /* Set the thread handle to NULL */
-        *thread = NULL;
         /* Free the thread control block */
         free(thread_block);
         /* Deallocate the stack */

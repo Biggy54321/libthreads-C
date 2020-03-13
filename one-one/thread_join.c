@@ -49,20 +49,14 @@ ThreadReturn thread_join(Thread thread, ptr_t *return_value) {
     /* Get the thread control block */
     thread_block = (ThreadControlBlock *)thread;
     /* Check for errors */
-    if (!thread_block) {
-
-        return THREAD_FAIL;
-    }
+    RETURN_FAIL_IF(!thread_block);
 
     /* Wait on the thread's futex word */
     ret_val = _futex(&thread_block->futex_word,
                      FUTEX_WAIT,
                      thread_block->thread_id);
     /* Check for errors */
-    if ((ret_val == -1) && (errno != EAGAIN)) {
-
-        return THREAD_FAIL;
-    }
+    RETURN_FAIL_IF((ret_val == -1) && (errno != EAGAIN));
 
     /* Deallocate the stack */
     _deallocate_stack(thread_block->stack_base, thread_block->stack_limit);
