@@ -118,14 +118,14 @@ ThreadReturn thread_create(
     ThreadControlBlock *thread_block;
     ptr_t stack_top;
 
+    /* Check if the arguments are valid */
+    RETURN_FAIL_IF(!thread);
+    RETURN_FAIL_IF(!start_routine);
+
     /* Allocate the thread control block */
     thread_block = (ThreadControlBlock *)malloc(THREAD_CONTROL_BLOCK_SIZE);
     /* Check for errors */
     RETURN_FAIL_IF(!thread_block);
-
-    /* Check if the arguments are valid */
-    RETURN_FAIL_IF(!start_routine);
-    RETURN_FAIL_IF(!start_routine);
 
     /* Set the thread handle */
     *thread = (Thread)thread_block;
