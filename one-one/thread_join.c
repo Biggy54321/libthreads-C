@@ -48,6 +48,11 @@ ThreadReturn thread_join(Thread thread, ptr_t *return_value) {
 
     /* Get the thread control block */
     thread_block = (ThreadControlBlock *)thread;
+    /* Check for errors */
+    if (!thread_block) {
+
+        return THREAD_FAIL;
+    }
 
     /* Wait on the thread's futex word */
     ret_val = _futex(&thread_block->futex_word,

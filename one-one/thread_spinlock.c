@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <linux/futex.h>
 #include <stdatomic.h>
+#include <errno.h>
 
 #include "./thread_self.h"
 #include "./thread_spinlock.h"
@@ -46,13 +47,21 @@ static inline int _futex(int *uaddr, int futex_op, int val) {
  * @note Reinitialization of a lock held by other threads may lead to
  *       unexpected results, hence this function must be called only once
  */
-void thread_spinlock_init(ThreadSpinLock *spinlock) {
+ThreadReturn thread_spinlock_init(ThreadSpinLock *spinlock) {
+
+    /* Check for errors */
+    if (!spinlock) {
+
+        return THREAD_FAIL;
+    }
 
     /* Set the lock word status to not taken */
     spinlock->lock_word = SPINLOCK_NOT_TAKEN;
 
     /* Set the owner to none */
     spinlock->owner_thread = NULL;
+
+    return THREAD_OK;
 }
 
 /**
@@ -60,9 +69,16 @@ void thread_spinlock_init(ThreadSpinLock *spinlock) {
  * @param[in/out] spinlock Pointer to the spinlock instance
  * @note The call is blocking and will return only if the lock is acquired
  */
-void thread_spinlock(ThreadSpinLock *spinlock) {
+ThreadReturn thread_spinlock(ThreadSpinLock *spinlock) {
 
     Thread thread;
+    int futex_ret;
+
+    /* Check for errors */
+    if (!spinlock) {
+
+        return THREAD_FAIL;
+    }
 
     /* Get the thread handle */
     thread = thread_self();
@@ -71,7 +87,7 @@ void thread_spinlock(ThreadSpinLock *spinlock) {
     if (spinlock->owner_thread == thread) {
 
         /* Return as there is no need to lock */
-        return;
+        return THREAD_OK;
     }
 
     /* For eternity */
@@ -89,15 +105,30 @@ void thread_spinlock(ThreadSpinLock *spinlock) {
         }
 
         /* Wait till the lock is not released by the owner */
-        _futex(&spinlock->lock_word, FUTEX_WAIT, SPINLOCK_TAKEN);
+        futex_ret = _futex(&spinlock->lock_word, FUTEX_WAIT, SPINLOCK_TAKEN);
+        /* Check for errors */
+        if ((futex_ret == -1) && (errno != EAGAIN)) {
+
+            return THREAD_FAIL;
+        }
     }
+
+    return THREAD_OK;
 }
 
 /**
  * @brief Releases the spinlock
  * @param[in/out] spinlock Pointer to the spinlock instance
  */
-void thread_spinunlock(ThreadSpinLock *spinlock) {
+ThreadReturn thread_spinunlock(ThreadSpinLock *spinlock) {
+
+    int futex_ret;
+
+    /* Check for errors */
+    if (!spinlock) {
+
+        return THREAD_FAIL;
+    }
 
     /* Release the spinlock */
     if (ATOMIC_XCHG(&spinlock->lock_word,
@@ -109,5 +140,12 @@ void thread_spinunlock(ThreadSpinLock *spinlock) {
 
         /* Wake up the waiting threads */
         _futex(&spinlock->lock_word, FUTEX_WAKE, NB_WAKEUP_PROCESSES);
+        /* Check for errors */
+        if ((futex_ret == -1) && (errno != EAGAIN)) {
+
+            return THREAD_FAIL;
+        }
     }
+
+    return THREAD_OK;
 }

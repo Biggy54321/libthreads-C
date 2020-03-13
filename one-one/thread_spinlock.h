@@ -6,16 +6,16 @@
 /**
  * Thread lock initialization function signature
  */
-void thread_spinlock_init(ThreadSpinLock *spinlock);
+ThreadReturn thread_spinlock_init(ThreadSpinLock *spinlock);
 
 /**
  * Thread lock function signature
  */
-void thread_spinlock(ThreadSpinLock *spinlock);
+ThreadReturn thread_spinlock(ThreadSpinLock *spinlock);
 
 /**
  * Thread unlock function signature
  */
-void thread_spinunlock(ThreadSpinLock *spinlock);
+ThreadReturn thread_spinunlock(ThreadSpinLock *spinlock);
 
 #endif

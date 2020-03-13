@@ -127,8 +127,17 @@ ThreadReturn thread_create(
     }
 
     /* Set the thread handle */
+    if (!thread) {
+
+        return THREAD_FAIL;
+    }
     *thread = (Thread)thread_block;
 
+    /* Check if the start routine is valid */
+    if (!start_routine) {
+
+        return THREAD_OK;
+    }
     /* Initialize the start routine */
     thread_block->start_routine = start_routine;
     /* Initialize the start routine arguments */

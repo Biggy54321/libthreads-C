@@ -168,3 +168,7 @@ offsets currently so as to prevent any kind of padding.
 
 * The spinlock initialization function does not prevent multiple initialization,
   which may cause multiple threads to enter critical section.
+
+* If a join is performed on a joined thread undefined result is produced.
+
+* Loose error checking is performed in the functions.

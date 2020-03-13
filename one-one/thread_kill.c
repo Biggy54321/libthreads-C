@@ -28,6 +28,12 @@ ThreadReturn thread_kill(Thread thread, int sig_num) {
 
     uint32_t thread_group_id;
 
+    /* Check for errors */
+    if (!thread) {
+
+        return THREAD_FAIL;
+    }
+
     /* Get the thread group id */
     thread_group_id = getpid();
 
