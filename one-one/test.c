@@ -27,11 +27,7 @@ void *func1(void *arg) {
 
 void *func2(void *arg) {
 
-    Thread td1 = (Thread)arg;
-
     print("In thread2\n");
-
-    /* thread_join(td1, NULL); */
 
     thread_exit((void *)256);
 }
@@ -42,11 +38,11 @@ void main() {
     void *ret1, *ret2;
 
     thread_create(&td1, func1, NULL);
-    thread_create(&td2, func2, (void **)td1);
+    thread_create(&td2, func2, NULL);
 
     sleep(1);
 
-    /* thread_kill(td1, SIGUSR1); */
+    thread_kill(td1, SIGUSR1);
 
     thread_join(td1, &ret1);
     thread_join(td2, &ret2);
