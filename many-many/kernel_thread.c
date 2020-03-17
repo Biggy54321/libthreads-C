@@ -4,6 +4,7 @@
 #include <sys/prctl.h>
 #include <unistd.h>
 #include <syscall.h>
+#include <stdlib.h>
 
 #include "./kernel_thread.h"
 #include "./scheduler.h"
@@ -104,5 +105,4 @@ KernelThread kernel_thread_self(void) {
 
     /* Return kernel thread handle */
     return (KernelThread)fs;
-
 }
