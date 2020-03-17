@@ -12,7 +12,7 @@
  */
 #define _ATOM_CAS(addr, old_val, new_val)                               \
     ({                                                                  \
-        Lock _old_val = (old_val);                                  \
+        Lock _old_val = (old_val);                                      \
                                                                         \
         atomic_compare_exchange_strong((addr), &_old_val, (new_val));   \
     })
