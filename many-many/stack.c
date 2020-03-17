@@ -5,16 +5,20 @@
 
 #include "./stack.h"
 
-/**
- * Page size in bytes
- */
-#define PAGE_SIZE (getpagesize())
+/* Page size */
+#define _PAGE_SIZE              (getpagesize())
+/* Stack protection flags */
+#define _STACK_PROT_FLAGS       (PROT_READ | PROT_WRITE)
+/* Stack map flags */
+#define _STACK_MAP_FLAGS        (MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK)
+/* Stack guard flags */
+#define _STACK_GUARD_PROT_FLAGS (PROT_NONE)
 
 /**
  * @brief Returns the stack limit of a thread in bytes
  * @return Size in bytes
  */
-static long _stack_get_limit(void) {
+static long _stack_limit(void) {
 
     struct rlimit stack_limit;
 
@@ -32,20 +36,20 @@ static long _stack_get_limit(void) {
 void stack_alloc(stack_t *stack) {
 
     /* Get the stack limit */
-    stack->ss_size = _stack_get_limit();
+    stack->ss_size = _stack_limit();
 
     /* Memory map the stack */
     stack->ss_sp = mmap(NULL,
-                        stack->ss_size + PAGE_SIZE,
-                        PROT_READ | PROT_WRITE,
-                        MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK,
+                        stack->ss_size + _PAGE_SIZE,
+                        _STACK_PROT_FLAGS,
+                        _STACK_MAP_FLAGS,
                         -1, 0);
 
     /* Set the stack guard */
-    mprotect(stack->ss_sp, PAGE_SIZE, PROT_NONE);
+    mprotect(stack->ss_sp, _PAGE_SIZE, _STACK_GUARD_PROT_FLAGS);
 
     /* Update the new base of the stack */
-    stack->ss_sp += PAGE_SIZE;
+    stack->ss_sp += _PAGE_SIZE;
 
     /* Set no flags */
     stack->ss_flags = 0;
@@ -57,6 +61,6 @@ void stack_alloc(stack_t *stack) {
  */
 void stack_free(stack_t *stack) {
 
-    munmap(stack->ss_sp - PAGE_SIZE, stack->ss_size + PAGE_SIZE);
+    /* Unmap the previously mapped stack region */
+    munmap(stack->ss_sp - _PAGE_SIZE, stack->ss_size + _PAGE_SIZE);
 }
-

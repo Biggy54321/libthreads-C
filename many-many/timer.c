@@ -2,18 +2,14 @@
 
 #include "./timer.h"
 
-/**
- * Convert milliseconds to nanoseconds
- */
+/* Convert milliseconds to nanoseconds */
 #define _MILLISECS_TO_NANOSECS(msec) ((msec) * 1000000)
-/**
- * Get seconds in milliseconds
- */
-#define _SECS_IN_MILLISECS(msec) (_MILLISECS_TO_NANOSECS(msec) / 1000000000)
-/**
- * Get remainder nanoseconds in total milliseconds
- */
+/* Get seconds in milliseconds */
+#define _SECS_IN_MILLISECS(msec)     (_MILLISECS_TO_NANOSECS(msec) / 1000000000)
+/* Get remainder nanoseconds in total milliseconds */
 #define _NANOSECS_IN_MILLISECS(msec) (_MILLISECS_TO_NANOSECS(msec) % 1000000000)
+/* Kernel thread id */
+#define _KERNEL_THREAD_ID            (gettid())
 
 /**
  * @brief Initialize the timer for the given event
@@ -33,7 +29,7 @@ void timer_set(Timer *timer, void (*event_func)(int), long millisecs) {
     /* Initialize the signal event */
     timer->event.sigev_notify = SIGEV_THREAD_ID;
     timer->event.sigev_signo = SIGALRM;
-    timer->event._sigev_un._tid = gettid();
+    timer->event._sigev_un._tid = _KERNEL_THREAD_ID;
 
     /* Initialize the signal handler i.e. event function */
     signal(SIGALRM, event_func);

@@ -1,6 +1,6 @@
 #include <stdatomic.h>
 
-#include "./spin_lock.h"
+#include "./lock.h"
 
 /**
  * @brief Atomic compare and swap macro
@@ -12,7 +12,7 @@
  */
 #define _ATOM_CAS(addr, old_val, new_val)                               \
     ({                                                                  \
-        Lock _old_val = (old_val);                                      \
+        Lock _old_val = (old_val);                                  \
                                                                         \
         atomic_compare_exchange_strong((addr), &_old_val, (new_val));   \
     })
@@ -21,18 +21,18 @@
  * @brief Locks the given lock variable
  * @param[in] lock Pointer to the lock variable
  */
-void spin_lock(Lock *lock) {
+void lock_acquire(Lock *lock) {
 
     /* While the lock's status is not updated */
-    while (!_ATOM_CAS(lock, SPIN_LOCK_NOT_TAKEN, SPIN_LOCK_TAKEN));
+    while (!_ATOM_CAS(lock, LOCK_NOT_ACQUIRED, LOCK_ACQUIRED));
 }
 
 /**
  * @brief Unlocks the given lock variable
  * @param[in] lock Pointer to the lock variable
  */
-void spin_unlock(Lock *lock) {
+void lock_release(Lock *lock) {
 
     /* If the lock is updated with the release value */
-    _ATOM_CAS(lock, SPIN_LOCK_TAKEN, SPIN_LOCK_NOT_TAKEN);
+    _ATOM_CAS(lock, LOCK_ACQUIRED, LOCK_NOT_ACQUIRED);
 }
