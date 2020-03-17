@@ -1,10 +1,9 @@
-#define _GNU_SOURCE
 #include <sched.h>
+#include <stdlib.h>
 #include <asm/prctl.h>
 #include <sys/prctl.h>
 #include <unistd.h>
 #include <syscall.h>
-#include <stdlib.h>
 
 #include "./kernel_thread.h"
 #include "./scheduler.h"
@@ -12,6 +11,18 @@
 
 /* Array of kernel threads */
 static KernelThread _kthreads[NB_OF_KERNEL_THREADS];
+
+/**
+ * @brief Get/Set architecture specific thread state
+ * @param[in] code Type of subfunction
+ * @param[in/out] Address of value to be set or to be read into
+ * @return 0 on success, else -1
+ */
+static int _arch_prctl(int code, long *addr) {
+
+    /* Call using syscall wrapper */
+    return syscall(SYS_arch_prctl, code, addr);
+}
 
 /**
  * @brief Allocate the kernel thread
@@ -28,7 +39,7 @@ static void _kernel_thread_create(KernelThread *kthread) {
     /* Set the address of the kernel thread control block */
     *kthread = (KernelThread)ktcb;
 
-    /* Initialize the currently mapped user thread to NULL */
+    /* Set the mapped user thread to NULL */
     ktcb->user_thread = NULL;
 
     /* Initialize the stack for the kernel thread */
@@ -40,9 +51,9 @@ static void _kernel_thread_create(KernelThread *kthread) {
     /* Create the kernel thread */
     clone(scheduler,
           stack_top,
-          CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_THREAD |
-          CLONE_SYSVSEM | CLONE_PARENT_SETTID | CLONE_SETTLS,
-          ktcb,
+          CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
+          CLONE_THREAD | CLONE_SYSVSEM | CLONE_PARENT_SETTID | CLONE_SETTLS,
+          NULL,
           &(ktcb->thread_id),
           ktcb,
           NULL);
@@ -81,28 +92,14 @@ void kernel_threads_deinit(void) {
 }
 
 /**
- * @brief Get/Set architecture specific thread state
- * @param[in] code Type of subfunction
- * @param[in/out] Address of value to be set or to be read into
- * @return 0 on success, else -1
- */
-static int _arch_prctl(int code, unsigned long *addr) {
-
-    /* Call using syscall wrapper */
-    return syscall(SYS_arch_prctl, code, addr);
-}
-
-/**
- * @brief Returns the currently running kernel thread
+ * @brief Returns the kernel thread handle
  * @return Kernel thread instance
  */
 KernelThread kernel_thread_self(void) {
 
     long fs;
 
-    /* Get the contents of the fs register */
     _arch_prctl(ARCH_GET_FS, &fs);
 
-    /* Return kernel thread handle */
     return (KernelThread)fs;
 }

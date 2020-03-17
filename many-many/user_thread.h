@@ -2,6 +2,7 @@
 #define _USER_THREAD_H_
 
 #include <ucontext.h>
+#include <setjmp.h>
 
 /**
  * User thread control structure
@@ -10,6 +11,9 @@ typedef struct _UserThreadControlBlock {
 
     /* Thread id */
     int thread_id;
+
+    /* Wait word */
+    int wait_word;
 
     /* Thread start function */
     void *(*start_routine)(void *);
@@ -20,8 +24,8 @@ typedef struct _UserThreadControlBlock {
     /* Thread return value */
     void *return_value;
 
-    /* Wait word */
-    int wait_word;
+    /* Exit jump location */
+    jmp_buf exit_env;
 
     /* Context of the user thread */
     ucontext_t context;
@@ -38,5 +42,12 @@ typedef struct _UserThreadControlBlock {
  * User thread handle
  */
 typedef UserThreadControlBlock *UserThread;
+
+void user_thread_create(
+        UserThread *uthread,
+        void *(*start_routine)(void *),
+        void *argument);
+
+void user_thread_destroy(UserThread *uthread);
 
 #endif
