@@ -4,6 +4,7 @@
 #include <ucontext.h>
 #include <time.h>
 #include <signal.h>
+#include <assert.h>
 
 /**
  * Thread state enumeration

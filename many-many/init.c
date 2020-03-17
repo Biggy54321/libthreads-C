@@ -36,6 +36,9 @@ static void _thread_start(void) {
     /* Get the thread handle */
     thread = (Thread)_get_fs();
 
+    /* Check for errors */
+    assert(thread);
+
     /* Call the requested thread start routine */
     thread->return_value = thread->start_routine(thread->argument);
 
@@ -53,6 +56,10 @@ void init_thread(
         Thread *thread,
         void *(*start_routine)(void *),
         void *argument) {
+
+    /* Check for errors */
+    assert(thread);
+    assert(start_routine);
 
     /* Create a new thread */
     *thread = (Thread)malloc(THREAD_CONTROL_BLOCK_SIZE);

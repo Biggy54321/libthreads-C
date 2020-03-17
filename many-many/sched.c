@@ -49,6 +49,9 @@ static void _sched_yield(int argument) {
     /* Get the address of the thread local storage */
     thread = (Thread)_get_fs();
 
+    /* Check for errors */
+    assert(thread);
+
     /* Swap the context with the scheduler */
     swapcontext(&thread->curr_context, &thread->ret_context);
 }
@@ -64,6 +67,9 @@ static int _sched_dispatch(void *argument) {
     Timer timer;
     Thread thread;
     long old_fs;
+
+    /* Check for errors */
+    assert(argument);
 
     /* Get the argument scheduler */
     sched = (Scheduler *)argument;
@@ -136,6 +142,9 @@ static int _sched_dispatch(void *argument) {
  */
 static void _sched_create(Scheduler *sched) {
 
+    /* Check for errors */
+    assert(sched);
+
     /* Set the currently mapped user thread to none */
     sched->thread = NULL;
 
@@ -143,12 +152,12 @@ static void _sched_create(Scheduler *sched) {
     stack_alloc(&sched->stack);
 
     /* Create the kernel thread for running the scheduler */
-    clone(_sched_dispatch,
-          sched->stack.ss_sp + sched->stack.ss_size,
-          CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
-          CLONE_THREAD | CLONE_SYSVSEM | CLONE_PARENT_SETTID,
-          sched,
-          &sched->thread_id);
+    assert(clone(_sched_dispatch,
+                 sched->stack.ss_sp + sched->stack.ss_size,
+                 CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
+                 CLONE_THREAD | CLONE_SYSVSEM | CLONE_PARENT_SETTID,
+                 sched,
+                 &sched->thread_id) != -1);
 }
 
 /**

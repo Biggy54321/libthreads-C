@@ -35,6 +35,9 @@ static long _stack_limit(void) {
  */
 void stack_alloc(stack_t *stack) {
 
+    /* Check for errors */
+    assert(stack);
+
     /* Get the stack limit */
     stack->ss_size = _stack_limit();
 
@@ -44,6 +47,8 @@ void stack_alloc(stack_t *stack) {
                         _STACK_PROT_FLAGS,
                         _STACK_MAP_FLAGS,
                         -1, 0);
+    /* Check for errors */
+    assert(stack->ss_sp != MAP_FAILED);
 
     /* Set the stack guard */
     mprotect(stack->ss_sp, _PAGE_SIZE, _STACK_GUARD_PROT_FLAGS);
@@ -60,6 +65,9 @@ void stack_alloc(stack_t *stack) {
  * @param[out] stack Pointer to the stack instance to be deinitialized
  */
 void stack_free(stack_t *stack) {
+
+    /* Check for errors */
+    assert(stack);
 
     /* Unmap the previously mapped stack region */
     munmap(stack->ss_sp - _PAGE_SIZE, stack->ss_size + _PAGE_SIZE);

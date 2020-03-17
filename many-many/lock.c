@@ -23,6 +23,9 @@
  */
 void lock_acquire(Lock *lock) {
 
+    /* Check for errors */
+    assert(lock);
+
     /* While the lock's status is not updated */
     while (!_ATOM_CAS(lock, LOCK_NOT_ACQUIRED, LOCK_ACQUIRED));
 }
@@ -32,6 +35,9 @@ void lock_acquire(Lock *lock) {
  * @param[in] lock Pointer to the lock variable
  */
 void lock_release(Lock *lock) {
+
+    /* Check for errors */
+    assert(lock);
 
     /* If the lock is updated with the release value */
     _ATOM_CAS(lock, LOCK_ACQUIRED, LOCK_NOT_ACQUIRED);

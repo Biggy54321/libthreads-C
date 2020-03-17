@@ -17,6 +17,9 @@ static Lock _lock = LOCK_NOT_ACQUIRED;
  */
 void list_enqueue(Thread thread) {
 
+    /* Check for errors */
+    assert(thread);
+
     /* Set the next pointer of the new thread to NULL */
     thread->next = NULL;
 
@@ -45,6 +48,9 @@ void list_enqueue(Thread thread) {
 Thread list_dequeue(void) {
 
     Thread thread;
+
+    /* Check for errors */
+    assert(_head);
 
     /* Get the thread pointed by head */
     thread = _head;

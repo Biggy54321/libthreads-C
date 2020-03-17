@@ -20,6 +20,10 @@
  */
 void timer_set(Timer *timer, void (*event_func)(int), long millisecs) {
 
+    /* Check for errors */
+    assert(timer);
+    assert(event_func);
+
     /* Initialize the interval of timeout */
     timer->interval.it_interval.tv_nsec = 0;
     timer->interval.it_interval.tv_sec = 0;
@@ -42,6 +46,9 @@ void timer_set(Timer *timer, void (*event_func)(int), long millisecs) {
  */
 void timer_start(Timer *timer) {
 
+    /* Check for errors */
+    assert(timer);
+
     /* Allocate the timer */
     timer_create(CLOCK_REALTIME, &timer->event, &timer->timerid);
 
@@ -54,6 +61,9 @@ void timer_start(Timer *timer) {
  * @param[in] timer Pointer to the timer instance
  */
 void timer_stop(Timer *timer) {
+
+    /* Check for errors */
+    assert(timer);
 
     /* Deallocate the timer */
     timer_delete(timer->timerid);
