@@ -9,7 +9,7 @@
 #include "./init.h"
 
 /* Thread id to be assigned to next admitted thread */
-static int _nxt_tid = 0;
+static int _nxt_tid = 1;
 static Lock _lock = LOCK_NOT_ACQUIRED;
 
 /**
