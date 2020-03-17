@@ -48,7 +48,7 @@ void stack_alloc(stack_t *stack) {
     stack->ss_sp += PAGE_SIZE;
 
     /* Set no flags */
-    stack->flags = 0;
+    stack->ss_flags = 0;
 }
 
 /**
