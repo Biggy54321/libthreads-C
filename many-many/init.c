@@ -3,6 +3,7 @@
 #include <syscall.h>
 #include <asm/prctl.h>
 #include <sys/prctl.h>
+#include <stdatomic.h>
 
 #include "./lock.h"
 #include "./stack.h"
@@ -27,6 +28,20 @@ static inline long _get_fs(void) {
 }
 
 /**
+ * @brief Atomic compare and swap
+ * @param[in] addr Address of lock variable
+ * @param[in] old_val Old value expected in the lock variable
+ * @param[in] new_value New value to be set in the lock variable
+ * @return 1 if the value at addr is updated
+ * @return 0 if the value at addr is not updated
+ */
+static inline int _atomic_cas(int *addr, int old_val, int new_val) {
+
+    /* Use the atomic function to compare and exchange */
+    return atomic_compare_exchange_strong(addr, &old_val, new_val);
+}
+
+/**
  * @brief Actual thread start function
  */
 static void _thread_start(void) {
@@ -42,8 +57,8 @@ static void _thread_start(void) {
     /* Call the requested thread start routine */
     thread->return_value = thread->start_routine(thread->argument);
 
-    /* Mark the thread dead */
-    thread->state = THREAD_DEAD;
+    /* Set the state as dead */
+    _atomic_cas((int *)&thread->state, THREAD_ACTIVE, THREAD_INACTIVE);
 }
 
 /**

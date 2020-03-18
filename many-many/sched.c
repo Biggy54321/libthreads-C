@@ -4,6 +4,8 @@
 #include <syscall.h>
 #include <asm/prctl.h>
 #include <sys/prctl.h>
+#include <linux/futex.h>
+#include <sys/time.h>
 
 #include "./types.h"
 #include "./stack.h"
@@ -13,6 +15,21 @@
 
 /* Schedulers states */
 static Scheduler _scheds[NB_OF_SCHEDS];
+/* System up flag */
+static int _is_system_up = 0;
+
+/**
+ * @brief Futex syscall
+ * @param[in] uaddr Pointer to the futex word
+ * @param[in] futex_op Operation to be performed
+ * @param[in] val Expected value of the futex word
+ * @return 0 or errno
+ */
+static inline int _futex(int *uaddr, int futex_op, int val) {
+
+    /* Use the system call wrapper around the futex system call */
+    return syscall(SYS_futex, uaddr, futex_op, val, NULL, NULL, 0);
+}
 
 /**
  * @brief Set FS register value
@@ -81,7 +98,7 @@ static int _sched_dispatch(void *argument) {
     old_fs = _get_fs();
 
     /* For eternity */
-    while (1) {
+    while (_is_system_up) {
 
         /* Lock the thread list */
         list_lock();
@@ -134,6 +151,8 @@ static int _sched_dispatch(void *argument) {
             list_unlock();
         }
     }
+
+    return 0;
 }
 
 /**
@@ -152,12 +171,19 @@ static void _sched_create(Scheduler *sched) {
     stack_alloc(&sched->stack);
 
     /* Create the kernel thread for running the scheduler */
-    assert(clone(_sched_dispatch,
-                 sched->stack.ss_sp + sched->stack.ss_size,
-                 CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
-                 CLONE_THREAD | CLONE_SYSVSEM | CLONE_PARENT_SETTID,
-                 sched,
-                 &sched->thread_id) != -1);
+    sched->thread_id = clone(_sched_dispatch,
+                             sched->stack.ss_sp + sched->stack.ss_size,
+                             CLONE_VM | CLONE_FS | CLONE_FILES |
+                             CLONE_SIGHAND | CLONE_THREAD |
+                             CLONE_SYSVSEM | CLONE_PARENT_SETTID |
+                             CLONE_CHILD_CLEARTID,
+                             sched,
+                             &sched->futex_word,
+                             NULL,
+                             &sched->futex_word);
+
+    /* Check for errors */
+    assert(sched->thread_id != -1);
 }
 
 /**
@@ -166,12 +192,24 @@ static void _sched_create(Scheduler *sched) {
  */
 static void _sched_destroy(Scheduler *sched) {
 
+    /* Check for errors */
+    assert(sched);
+
+    /* Wait for the current kernel thread to finish */
+    _futex(&sched->futex_word, FUTEX_WAIT, sched->thread_id);
+
+    /* Deallocate the stack */
+    stack_free(&sched->stack);
 }
 
 /**
  * @brief Initializes the schedulers for the model
+ * @note Must be done by the main thread
  */
 void sched_init(void) {
+
+    /* Set the system up flag */
+    _is_system_up = 1;
 
     /* For each scheduler */
     for (int i = 0; i < NB_OF_SCHEDS; i++) {
@@ -183,8 +221,12 @@ void sched_init(void) {
 
 /**
  * @brief Denitializes the schedulers for the model
+ * @note Must be done by the main thread
  */
 void sched_deinit(void) {
+
+    /* Clear the system up flag */
+    _is_system_up = 0;
 
     /* For each scheduler */
     for (int i = 0; i < NB_OF_SCHEDS; i++) {

@@ -2,9 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "./list.h"
-#include "./init.h"
-#include "./sched.h"
+#include "./thread.h"
 
 #define print(str) (write(1, str, strlen(str)))
 
@@ -12,7 +10,7 @@ void *func1(void *arg) {
 
     print("Inside func1\n");
 
-    while (1);
+    thread_exit((void *)128);
 
     return NULL;
 }
@@ -21,40 +19,36 @@ void *func2(void *arg) {
 
     print("Inside func2\n");
 
-    return NULL;
+    return (void *)256;
 }
 
 void *func3(void *arg) {
 
     print("Inside func3\n");
 
-    return NULL;
+    return (void *)512;
 }
 
 int main() {
 
     Thread t1, t2, t3;
+    void *ret;
 
-    /* Create threads */
-    init_thread(&t1, func1, NULL);
-    init_thread(&t2, func2, NULL);
-    init_thread(&t3, func3, NULL);
+    thread_lib_init();
 
-    /* Add the threads to the list */
-    list_lock();
-    list_enqueue(t1);
-    list_enqueue(t2);
-    list_enqueue(t3);
-    list_unlock();
+    /* Create the threads */
+    thread_create(&t1, func1, NULL);
+    thread_create(&t2, func2, NULL);
+    thread_create(&t3, func3, NULL);
 
-    /* Start the kernel threads */
-    sched_init();
+    /* Wait for the threads execution */
+    thread_join(t1, &ret);
+    thread_join(t2, &ret);
+    thread_join(t3, &ret);
 
-    /* Wait */
-    while (1);
+    printf("%d\n", (int)ret);
 
-    /* Stop the kernel threads */
-    sched_deinit();
+    thread_lib_deinit();
 
     return 0;
 }

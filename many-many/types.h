@@ -14,8 +14,11 @@ typedef enum _ThreadState {
     /* Thread is running (i.e. schedulable) */
     THREAD_ACTIVE,
 
-    /* Thread is done executing */
-    THREAD_DEAD
+    /* Thread is done executing (but its record is still maintained) */
+    THREAD_INACTIVE,
+
+    /* Thread joined */
+    THREAD_JOINED
 
 } ThreadState;
 
@@ -100,6 +103,9 @@ typedef struct _Scheduler {
 
     /* Kernel thread id of the scheduler */
     int thread_id;
+
+    /* Futex word */
+    int futex_word;
 
     /* Stack for the scheduler */
     stack_t stack;
