@@ -10,22 +10,28 @@
 
 void *func1(void *arg) {
 
+    print("Inside func1\n");
+
     while (1);
 
-    print("Inside func1\n");
+    return NULL;
 }
 
 void *func2(void *arg) {
 
     print("Inside func2\n");
+
+    return NULL;
 }
 
 void *func3(void *arg) {
 
     print("Inside func3\n");
+
+    return NULL;
 }
 
-void main() {
+int main() {
 
     Thread t1, t2, t3;
 
@@ -49,4 +55,6 @@ void main() {
 
     /* Stop the kernel threads */
     sched_deinit();
+
+    return 0;
 }
