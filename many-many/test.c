@@ -12,7 +12,7 @@ void *func1(void *arg) {
 
     thread_exit((void *)128);
 
-    return NULL;
+    return (void *)128;
 }
 
 void *func2(void *arg) {
@@ -32,7 +32,7 @@ void *func3(void *arg) {
 int main() {
 
     Thread t1, t2, t3;
-    void *ret;
+    void *ret1, *ret2, *ret3;
 
     thread_lib_init();
 
@@ -42,11 +42,13 @@ int main() {
     thread_create(&t3, func3, NULL);
 
     /* Wait for the threads execution */
-    thread_join(t1, &ret);
-    thread_join(t2, &ret);
-    thread_join(t3, &ret);
+    thread_join(t1, &ret1);
+    thread_join(t2, &ret2);
+    thread_join(t3, &ret3);
 
-    printf("%d\n", (int)ret);
+    printf("%d\n", (int)ret1);
+    printf("%d\n", (int)ret2);
+    printf("%d\n", (int)ret3);
 
     thread_lib_deinit();
 

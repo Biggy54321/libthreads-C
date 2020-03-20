@@ -73,6 +73,9 @@ void thread_create(
  */
 void thread_join(Thread thread, void **return_value) {
 
+    /* Check if the thread handle is not null */
+    assert(thread);
+
     /* Wait for target thread to change its state */
     while (!_atomic_cas((int *)&thread->state, THREAD_INACTIVE, THREAD_JOINED));
 
@@ -83,9 +86,6 @@ void thread_join(Thread thread, void **return_value) {
         *return_value = thread->return_value;
     }
 
-    /* Free the thread stack */
-    stack_free(&(thread->curr_context.uc_stack));
-
     /* Dont free the thread control block as other threads may be waiting */
 }
 
@@ -94,6 +94,7 @@ void thread_join(Thread thread, void **return_value) {
  * @param[in] return_value Return value of the current thread
  * @note May give undefined result if used in threads not created using
  *       thread_create()
+ * @note This function is segfaulting (I fucking don't know why)
  */
 void thread_exit(void *return_value) {
 
@@ -172,9 +173,3 @@ void thread_lib_deinit(void) {
     /* Deinitialize the schedulers */
     sched_deinit();
 }
-
-
-/* TODO
- * 1. IMPLEMENT THE THREAD KILL
- * 2. IMPROVE ERROR CHECKING
- */

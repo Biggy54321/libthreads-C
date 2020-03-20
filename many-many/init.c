@@ -79,6 +79,9 @@ void init_thread(
     /* Create a new thread */
     *thread = (Thread)malloc(THREAD_CONTROL_BLOCK_SIZE);
 
+    /* Check if malloc was ok */
+    assert(*thread);
+
     /* Lock the next thread id */
     lock_acquire(&_lock);
 

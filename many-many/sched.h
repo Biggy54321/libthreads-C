@@ -6,7 +6,7 @@
 /* Number of kernel threads in the model */
 #define NB_OF_SCHEDS (1u)
 /* Time slice of user thread on each scheduler */
-#define TIME_SLICE_ms (10u)
+#define TIME_SLICE_ms (2000u)
 
 void sched_init(void);
 

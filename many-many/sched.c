@@ -13,6 +13,8 @@
 #include "./list.h"
 #include "./sched.h"
 
+#include <stdio.h>
+
 /* Schedulers states */
 static Scheduler _scheds[NB_OF_SCHEDS];
 /* System up flag */
