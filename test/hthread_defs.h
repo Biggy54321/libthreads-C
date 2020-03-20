@@ -75,10 +75,10 @@ struct _HThreadManyMany {
     long _pad;
 
     /* Current context of the thread */
-    ucontext_t curr_cxt;
+    ucontext_t *curr_cxt;
 
     /* Return context of the scheduler */
-    ucontext_t ret_cxt;
+    ucontext_t *ret_cxt;
 
     /* Linked list links */
     ListMember list_mem;
@@ -99,7 +99,7 @@ struct _HThreadOneOne {
     stack_t stack;
 
     /* Return context */
-    ucontext_t ret_cxt;
+    ucontext_t *ret_cxt;
 };
 
 /**

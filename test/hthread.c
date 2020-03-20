@@ -1,4 +1,6 @@
 #include "./hthread.h"
+#include "./hthread_list.h"
+#include "./hthread_kernel.h"
 
 /**
  * @brief Initialize the hybrid thread library
@@ -11,6 +13,10 @@
 void hthread_init(int nb_kthds) {
 
     /* Initialize the thread list */
+    hthread_list_init();
+
+    /* Initialize the kernel threads */
+    hthread_kernel_threads_init(nb_kthds);
 }
 
 
