@@ -95,6 +95,9 @@ struct _HThreadOneOne {
     /* Padding for stack canary */
     long _pad;
 
+    /* Kernel thread id */
+    int tid;
+
     /* Thread stack */
     stack_t stack;
 
