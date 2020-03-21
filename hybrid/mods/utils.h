@@ -1,3 +1,6 @@
+#ifndef _UTILS_H_
+#define _UTILS_H_
+
 #define _GNU_SOURCE
 #include <unistd.h>
 #include <stdatomic.h>
@@ -63,3 +66,5 @@ static inline long get_fs(void) {
 
     return addr;
 }
+
+#endif
