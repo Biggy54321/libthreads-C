@@ -82,21 +82,30 @@ int hthread_sched_dispatch(void *arg) {
         /* Reset the FS register value to old value */
         set_fs(old_fs);
 
-        /* If the thread is active */
-        if (hthread->state == HTHREAD_STATE_ACTIVE) {
+        /* Take action depending on the thread state */
+        switch (hthread->state) {
 
-            /* Lock the list */
-            hthread_list_lock();
+            case HTHREAD_STATE_INIT:
+            case HTHREAD_STATE_ACTIVE:
 
-            /* Add the current thread */
-            hthread_list_add(hthread);
+                /* Lock the list */
+                hthread_list_lock();
 
-            /* Unlock the list */
-            hthread_list_unlock();
-        } else if (hthread->state == HTHREAD_STATE_INACTIVE) {
+                /* Add the current thread */
+                hthread_list_add(hthread);
 
-            /* Clear the wait state */
-            hthread->wait = 0;
+                /* Unlock the list */
+                hthread_list_unlock();
+                break;
+
+            case HTHREAD_STATE_INACTIVE:
+
+                /* Clear the wait state */
+                hthread->wait = 0;
+                break;
+
+            default:
+                break;
         }
     }
 }
