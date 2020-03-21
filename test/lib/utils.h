@@ -7,6 +7,9 @@
 #include <linux/futex.h>
 #include <sys/time.h>
 
+/* Get thread id function declaration to prevent warning */
+pid_t gettid(void);
+
 /* Kernel thread id */
 #define KERNEL_THREAD_ID            (gettid())
 

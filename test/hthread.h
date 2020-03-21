@@ -19,6 +19,8 @@ void hthread_mutex_lock(HThreadMutex *mutex);
 
 void hthread_mutex_unlock(HThreadMutex *mutex);
 
+void hthread_kill(HThread hthread, int sig_num);
+
 void hthread_deinit(void);
 
 #endif

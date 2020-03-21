@@ -2,7 +2,7 @@
 #define _HTHREAD_SCHED_H_
 
 /* Time slice for each user thread in milliseconds */
-#define TIME_SLICE_ms (2000)
+#define TIME_SLICE_ms (10)
 
 void hthread_sched_start(void);
 

@@ -25,7 +25,7 @@ typedef enum _HThreadState {
     /* Thread is active i.e. runnable */
     HTHREAD_STATE_ACTIVE,
 
-    /* Thread is inactive i.e. not runnable and joinable*/
+    /* Thread is inactive i.e. not runnable*/
     HTHREAD_STATE_INACTIVE,
 
     /* Thread is joined i.e. it is not joinable */
@@ -52,7 +52,13 @@ typedef enum _HThreadState {
     void *arg;                                  \
                                                 \
     /* Thread starting function return value */ \
-    void *ret;
+    void *ret;                                  \
+                                                \
+    /* Padding for stack canary */              \
+    long _pad;                                  \
+                                                \
+    /* Wait word */                             \
+    int wait;
 
 /**
  * General thread control block structure
@@ -71,8 +77,8 @@ struct _HThreadManyMany {
     /* Include the base members of the thread control block */
     HTHREAD_BASE_MEMBERS;
 
-    /* Padding for stack canary */
-    long _pad;
+    /* Is scheduled */
+    int is_sched;
 
     /* Current context of the thread */
     ucontext_t *curr_cxt;
@@ -91,9 +97,6 @@ struct _HThreadOneOne {
 
     /* Include all the base members of the thread */
     HTHREAD_BASE_MEMBERS;
-
-    /* Padding for stack canary */
-    long _pad;
 
     /* Kernel thread id */
     int tid;

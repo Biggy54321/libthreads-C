@@ -48,7 +48,7 @@ static KThread *_kernel_thread_create(void) {
 
     /* Create a kernel thread */
     kthread->id = clone(hthread_sched_dispatch,
-                        kthread->stack.ss_sp = kthread->stack.ss_size,
+                        kthread->stack.ss_sp + kthread->stack.ss_size,
                         CLONE_VM | CLONE_FS | CLONE_FILES |
                         CLONE_SIGHAND | CLONE_THREAD |
                         CLONE_SYSVSEM | CLONE_PARENT_SETTID |

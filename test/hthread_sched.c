@@ -89,10 +89,14 @@ int hthread_sched_dispatch(void *arg) {
             hthread_list_lock();
 
             /* Add the current thread */
-            hthread_list_add(hthread);
+            hthread_list_add((HThread)hthread);
 
             /* Unlock the list */
             hthread_list_unlock();
+        } else if (hthread->state == HTHREAD_STATE_INACTIVE) {
+
+            /* Clear the wait state */
+            hthread->wait = 0;
         }
     }
 }

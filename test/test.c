@@ -1,0 +1,70 @@
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <signal.h>
+
+#include "./hthread.h"
+
+#define print(str) write(1, str, strlen(str))
+
+void handler(int sig) {
+
+    print("Inside the handler\n");
+
+    hthread_exit((void *)1024);
+}
+
+void *func1(void *arg) {
+
+    print("Inside func1\n");
+
+    /* while (1); */
+
+    hthread_exit((void *)128);
+}
+
+void *func2(void *arg) {
+
+    print("Inside func2\n");
+
+    hthread_exit((void *)256);
+}
+
+void *func3(void *arg) {
+
+    print("Inside func3\n");
+
+    hthread_exit((void *)512);
+}
+
+void main() {
+
+    HThread t1, t2, t3;
+    void *r1, *r2, *r3;
+
+    sigset_t mask;
+    sigfillset(&mask);
+    sigprocmask(SIG_BLOCK, &mask, NULL);
+
+    hthread_init(3);
+
+    signal(SIGUSR1, handler);
+
+    t1 = hthread_create(func1, NULL, HTHREAD_TYPE_ONE_ONE);
+
+    t2 = hthread_create(func2, NULL, HTHREAD_TYPE_MANY_MANY);
+
+    t3 = hthread_create(func3, NULL, HTHREAD_TYPE_MANY_MANY);
+
+    hthread_kill(t1, SIGUSR1);
+
+    hthread_join(t1, &r1);
+    hthread_join(t2, &r2);
+    hthread_join(t3, &r3);
+
+    printf("%d\n", r1);
+    printf("%d\n", r2);
+    printf("%d\n", r3);
+
+    hthread_deinit();
+}

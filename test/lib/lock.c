@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "./utils.h"
 #include "./lock.h"
 
