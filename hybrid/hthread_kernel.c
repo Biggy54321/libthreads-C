@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "./lib/utils.h"
-#include "./lib/list.h"
-#include "./lib/stack.h"
+#include "./mods/utils.h"
+#include "./mods/list.h"
+#include "./mods/stack.h"
 #include "./hthread_kernel.h"
 #include "./hthread_sched.h"
 

@@ -1,3 +1,3 @@
 #!/bin/zsh
 
-cc ./lib/*.c ./*.c -lrt -ggdb
+cc ./mods/*.c ./*.c -lrt -ggdb

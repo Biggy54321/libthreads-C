@@ -1,5 +1,5 @@
-#include "./lib/list.h"
-#include "./lib/lock.h"
+#include "./mods/list.h"
+#include "./mods/lock.h"
 #include "./hthread_list.h"
 
 /* Global many many threads list  */

@@ -2,8 +2,8 @@
 #define _HTHREAD_DEFS_H_
 
 #include <ucontext.h>
-#include "./lib/list.h"
-#include "./lib/lock.h"
+#include "./mods/list.h"
+#include "./mods/lock.h"
 
 /**
  * Thread mapping type

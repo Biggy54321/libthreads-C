@@ -1,7 +1,7 @@
 #include <assert.h>
 
-#include "./lib/utils.h"
-#include "./lib/timer.h"
+#include "./mods/utils.h"
+#include "./mods/timer.h"
 #include "./hthread_list.h"
 #include "./hthread_sched.h"
 

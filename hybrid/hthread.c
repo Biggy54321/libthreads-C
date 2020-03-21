@@ -3,9 +3,9 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "./lib/utils.h"
-#include "./lib/lock.h"
-#include "./lib/stack.h"
+#include "./mods/utils.h"
+#include "./mods/lock.h"
+#include "./mods/stack.h"
 #include "./hthread.h"
 #include "./hthread_list.h"
 #include "./hthread_kernel.h"
@@ -589,18 +589,8 @@ void hthread_deinit(void) {
 }
 
 /**
- * Each thread has its own signal mask. (no provision provided yet in tcb)
+ * Handle signals in many-many user threads using the uc_sigmask member of the
+ * ucontext_t structure
  *
- * When the one-one thread is being loaded the getcontext is not getting
- * initialized before the signal handler is running. Which is causing the
- * program to segfault. (we can set the context of the function)
- *
- * Handle blocking and unblocking of the signal masks to handle this
- *
- * Do something for handling signal handling in many-many
- *
- * The cloned kernel thread inherits the sig mask of the parent thread
- *
- * ucontext_t has uc_sigmask - Use that for many-many case to provide local
- *                             sigmask to each user thread
+ * 
  */
