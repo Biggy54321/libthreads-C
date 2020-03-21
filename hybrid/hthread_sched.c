@@ -14,16 +14,16 @@ static int _do_scheduling;
  */
 void hthread_sched_yield(int arg) {
 
-    struct _HThreadManyMany *hthread;
+    HThread hthread;
 
     /* Get the address of the thread control block */
-    hthread = (struct _HThreadManyMany *)get_fs();
+    hthread = BASE(get_fs());
 
     /* Check for errors */
     assert(hthread);
 
     /* Swap the context with the dispatcher */
-    swapcontext(hthread->curr_cxt, hthread->ret_cxt);
+    swapcontext(MANY_MANY(hthread)->curr_cxt, MANY_MANY(hthread)->ret_cxt);
 }
 
 /**
@@ -38,7 +38,7 @@ void hthread_sched_yield(int arg) {
 int hthread_sched_dispatch(void *arg) {
 
     Timer timer;
-    struct _HThreadManyMany *hthread;
+    HThread hthread;
     long old_fs;
 
     /* Initialize the one shot timer event */
@@ -62,7 +62,7 @@ int hthread_sched_dispatch(void *arg) {
         }
 
         /* Get the thread to be scheduled */
-        hthread = (struct _HThreadManyMany *)hthread_list_get();
+        hthread = hthread_list_get();
 
         /* Unlock the list */
         hthread_list_unlock();
@@ -74,7 +74,7 @@ int hthread_sched_dispatch(void *arg) {
         timer_start(&timer);
 
         /* Swap the context with the user thread */
-        swapcontext(hthread->ret_cxt, hthread->curr_cxt);
+        swapcontext(MANY_MANY(hthread)->ret_cxt, MANY_MANY(hthread)->curr_cxt);
 
         /* Stop the timer */
         timer_stop(&timer);
@@ -89,7 +89,7 @@ int hthread_sched_dispatch(void *arg) {
             hthread_list_lock();
 
             /* Add the current thread */
-            hthread_list_add((HThread)hthread);
+            hthread_list_add(hthread);
 
             /* Unlock the list */
             hthread_list_unlock();

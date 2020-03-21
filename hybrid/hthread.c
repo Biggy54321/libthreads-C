@@ -2,7 +2,6 @@
 #include <sched.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <errno.h>
 
 #include "./lib/utils.h"
 #include "./lib/lock.h"
@@ -50,19 +49,22 @@ static int _get_nxt_id(void) {
  */
 static int _one_one_start(void *arg) {
 
-    struct _HThreadOneOne *hthread;
+    HThread hthread;
 
     /* Get the thread handle */
-    hthread = (struct _HThreadOneOne *)get_fs();
+    hthread = BASE(get_fs());
 
     /* Check for errors */
     assert(hthread);
 
     /* Get the current context */
-    getcontext(hthread->ret_cxt);
+    getcontext(ONE_ONE(hthread)->ret_cxt);
 
-    /* If the state of the thread is active */
-    if (hthread->state == HTHREAD_STATE_ACTIVE) {
+        /* If the state of the thread is active */
+    if (hthread->state == HTHREAD_STATE_INIT) {
+
+        /* Set the thread state to active */
+        hthread->state = HTHREAD_STATE_ACTIVE;
 
         /* Call the start routine */
         hthread->ret = hthread->start(hthread->arg);
@@ -82,10 +84,11 @@ static int _one_one_start(void *arg) {
  */
 static HThread _one_one_create(void *(*start)(void *), void *arg) {
 
-    struct _HThreadOneOne *hthread;
+    HThread hthread;
+    void *stack_top;
 
     /* Allocate the thread control block */
-    hthread = (struct _HThreadOneOne *)malloc(sizeof(struct _HThreadOneOne));
+    hthread = BASE(malloc(HTHREAD_ONE_ONE_TLS_SIZE));
     /* Check for errors */
     assert(hthread);
 
@@ -96,7 +99,7 @@ static HThread _one_one_create(void *(*start)(void *), void *arg) {
     hthread->type = HTHREAD_TYPE_ONE_ONE;
 
     /* Set the state */
-    hthread->state = HTHREAD_STATE_ACTIVE;
+    hthread->state = HTHREAD_STATE_INIT;
 
     /* Set the start function */
     hthread->start = start;
@@ -105,26 +108,31 @@ static HThread _one_one_create(void *(*start)(void *), void *arg) {
     hthread->arg = arg;
 
     /* Allocate the stack */
-    stack_alloc(&hthread->stack);
+    stack_alloc(&ONE_ONE(hthread)->stack);
 
     /* Allocate the context */
-    hthread->ret_cxt = (ucontext_t *)malloc(sizeof(ucontext_t));
+    ONE_ONE(hthread)->ret_cxt = (ucontext_t *)malloc(sizeof(ucontext_t));
     /* Check for errors */
-    assert(hthread->ret_cxt);
+    assert(ONE_ONE(hthread)->ret_cxt);
+
+    /* Find the stack top */
+    stack_top = ONE_ONE(hthread)->stack.ss_sp + ONE_ONE(hthread)->stack.ss_size;
 
     /* Create a thread */
-    hthread->tid = clone(_one_one_start,
-                         hthread->stack.ss_sp + hthread->stack.ss_size,
-                         CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
-                         CLONE_THREAD | CLONE_SYSVSEM | CLONE_SETTLS |
-                         CLONE_CHILD_CLEARTID | CLONE_PARENT_SETTID,
-                         NULL,
-                         &hthread->wait,
-                         hthread,
-                         &hthread->wait);
+    ONE_ONE(hthread)->tid = clone(_one_one_start,
+                                  stack_top,
+                                  CLONE_VM | CLONE_FS | CLONE_FILES |
+                                  CLONE_SIGHAND | CLONE_THREAD |
+                                  CLONE_SYSVSEM | CLONE_SETTLS |
+                                  CLONE_CHILD_CLEARTID |
+                                  CLONE_PARENT_SETTID,
+                                  NULL,
+                                  &hthread->wait,
+                                  hthread,
+                                  &hthread->wait);
 
     /* Return the thread handle */
-    return (HThread)hthread;
+    return hthread;
 }
 
 /**
@@ -135,13 +143,16 @@ static HThread _one_one_create(void *(*start)(void *), void *arg) {
  */
 static void _many_many_start(void) {
 
-    struct _HThreadManyMany *hthread;
+    HThread hthread;
 
     /* Get the thread handle */
-    hthread = (struct _HThreadManyMany *)get_fs();
+    hthread = BASE(get_fs());
 
     /* Check for errors */
     assert(hthread);
+
+    /* Set the thread state as active */
+    hthread->state = HTHREAD_STATE_ACTIVE;
 
     /* Call the start function */
     hthread->ret = hthread->start(hthread->arg);
@@ -158,10 +169,10 @@ static void _many_many_start(void) {
  */
 static HThread _many_many_create(void *(*start)(void *), void *arg) {
 
-    struct _HThreadManyMany *hthread;
+    HThread hthread;
 
     /* Allocate the thread control block */
-    hthread = (struct _HThreadManyMany *)malloc(sizeof(struct _HThreadManyMany));
+    hthread = BASE(malloc(HTHREAD_MANY_MANY_TLS_SIZE));
     /* Check for errors */
     assert(hthread);
 
@@ -172,7 +183,7 @@ static HThread _many_many_create(void *(*start)(void *), void *arg) {
     hthread->type = HTHREAD_TYPE_MANY_MANY;
 
     /* Set the state */
-    hthread->state = HTHREAD_STATE_ACTIVE;
+    hthread->state = HTHREAD_STATE_INIT;
 
     /* Set the start function */
     hthread->start = start;
@@ -183,31 +194,29 @@ static HThread _many_many_create(void *(*start)(void *), void *arg) {
     /* Initialize the wait word */
     hthread->wait = 1;
 
-    /* Initialize the scheduling status */
-
     /* Allocate the current context */
-    hthread->curr_cxt = (ucontext_t *)malloc(sizeof(ucontext_t));
+    MANY_MANY(hthread)->curr_cxt = (ucontext_t *)malloc(sizeof(ucontext_t));
     /* Check for errors */
-    assert(hthread->curr_cxt);
+    assert(MANY_MANY(hthread)->curr_cxt);
 
     /* Allocate the return context */
-    hthread->ret_cxt = (ucontext_t *)malloc(sizeof(ucontext_t));
+    MANY_MANY(hthread)->ret_cxt = (ucontext_t *)malloc(sizeof(ucontext_t));
     /* Check for errors */
-    assert(hthread->ret_cxt);
+    assert(MANY_MANY(hthread)->ret_cxt);
 
     /* Set the current context */
-    getcontext(hthread->curr_cxt);
+    getcontext(MANY_MANY(hthread)->curr_cxt);
 
     /* Allocate the stack */
-    stack_alloc(&(hthread->curr_cxt->uc_stack));
+    stack_alloc(&(MANY_MANY(hthread)->curr_cxt->uc_stack));
 
     /* Set the backlink */
-    hthread->curr_cxt->uc_link = hthread->ret_cxt;
+    MANY_MANY(hthread)->curr_cxt->uc_link = MANY_MANY(hthread)->ret_cxt;
 
     /* Make the context */
-    makecontext(hthread->curr_cxt, _many_many_start, 0);
+    makecontext(MANY_MANY(hthread)->curr_cxt, _many_many_start, 0);
 
-    return (HThread)hthread;
+    return BASE(hthread);
 }
 
 /**
@@ -221,25 +230,20 @@ static HThread _many_many_create(void *(*start)(void *), void *arg) {
  */
 void _one_one_free(HThread hthread, int free_tcb) {
 
-    struct _HThreadOneOne *hthread_one_one;
-
     /* Check for errors */
     assert(hthread);
 
-    /* Upcast the handle to one one thread */
-    hthread_one_one = (struct _HThreadOneOne *)hthread;
-
     /* Free the stack */
-    stack_free(&hthread_one_one->stack);
+    stack_free(&ONE_ONE(hthread)->stack);
 
     /* Free the return context */
-    free(hthread_one_one->ret_cxt);
+    free(ONE_ONE(hthread)->ret_cxt);
 
     /* If tcb is to be freed */
     if (free_tcb) {
 
         /* Free the thread handle */
-        free(hthread_one_one);
+        free(hthread);
     }
 }
 
@@ -254,28 +258,23 @@ void _one_one_free(HThread hthread, int free_tcb) {
  */
 void _many_many_free(HThread hthread, int free_tcb) {
 
-    struct _HThreadManyMany *hthread_many_many;
-
     /* Check for errors */
     assert(hthread);
 
-    /* Upcast the thread handle to many many thread */
-    hthread_many_many = (struct _HThreadManyMany *)hthread;
-
     /* Free the stack */
-    stack_free(&(hthread_many_many->curr_cxt->uc_stack));
+    stack_free(&(MANY_MANY(hthread)->curr_cxt->uc_stack));
 
     /* Free the current context */
-    free(hthread_many_many->curr_cxt);
+    free(MANY_MANY(hthread)->curr_cxt);
 
     /* Free the return context */
-    free(hthread_many_many->ret_cxt);
+    free(MANY_MANY(hthread)->ret_cxt);
 
     /* If tcb is to be freed */
     if (free_tcb) {
 
         /* Free the thread handle */
-        free(hthread_many_many);
+        free(hthread);
     }
 }
 
@@ -321,19 +320,23 @@ HThread hthread_create(void *(*start)(void *), void *arg, HThreadType type) {
 
     /* Check for errors */
     assert(start);
-    assert((type == HTHREAD_TYPE_ONE_ONE) || (type == HTHREAD_TYPE_MANY_MANY));
+    assert((type == HTHREAD_TYPE_ONE_ONE) ||
+           (type == HTHREAD_TYPE_MANY_MANY));
 
     /* Create the thread depending on its type */
     switch (type) {
 
         case HTHREAD_TYPE_ONE_ONE:
+
             /* Create a one-one thread */
             hthread = _one_one_create(start, arg);
             break;
 
         case HTHREAD_TYPE_MANY_MANY:
+
             /* Create a many-many thread */
             hthread = _many_many_create(start, arg);
+
             /* Add the thread to the list */
             hthread_list_add(hthread);
             break;
@@ -375,12 +378,14 @@ void hthread_join(HThread hthread, void **ret) {
     switch (hthread->type) {
 
         case HTHREAD_TYPE_ONE_ONE:
+
             /* Free the one one thread paritially */
             _one_one_free(hthread, 0);
             break;
 
         case HTHREAD_TYPE_MANY_MANY:
             /* Free the many many thread paritially */
+
             _many_many_free(hthread, 0);
             break;
 
@@ -403,11 +408,9 @@ void hthread_join(HThread hthread, void **ret) {
 void hthread_exit(void *ret) {
 
     HThread hthread;
-    struct _HThreadOneOne *hthread_one_one;
-    struct _HThreadManyMany *hthread_many_many;
 
     /* Get the thread handle */
-    hthread = (HThread)get_fs();
+    hthread = BASE(get_fs());
 
     /* Check for error */
     assert(hthread);
@@ -422,17 +425,15 @@ void hthread_exit(void *ret) {
     switch (hthread->type) {
 
         case HTHREAD_TYPE_ONE_ONE:
-            /* Up cast the thread handle to one one thread */
-            hthread_one_one = (struct _HThreadOneOne *)hthread;
+
             /* Jump to the exit context */
-            setcontext(hthread_one_one->ret_cxt);
+            setcontext(ONE_ONE(hthread)->ret_cxt);
             break;
 
         case HTHREAD_TYPE_MANY_MANY:
-            /* Up cast the thread handle to many many thread */
-            hthread_many_many = (struct _HThreadManyMany *)hthread;
+
             /* Jump to the exit context */
-            setcontext(hthread_many_many->ret_cxt);
+            setcontext(MANY_MANY(hthread)->ret_cxt);
             break;
 
         default:
@@ -452,7 +453,7 @@ void hthread_exit(void *ret) {
  */
 HThread hthread_self(void) {
 
-    return (HThread)get_fs();
+    return BASE(get_fs());
 }
 
 /**
@@ -465,9 +466,6 @@ HThread hthread_self(void) {
  */
 void hthread_kill(HThread hthread, int sig_num) {
 
-    struct _HThreadOneOne *hthread_one_one;
-    struct _HThreadManyMany *hthread_many_many;
-
     /* Check for errors */
     assert(hthread);
 
@@ -475,16 +473,17 @@ void hthread_kill(HThread hthread, int sig_num) {
     switch (hthread->type) {
 
         case HTHREAD_TYPE_ONE_ONE:
-            /* Upcast the thread handle to one one thread */
-            hthread_one_one = (struct _HThreadOneOne *)hthread;
+
+            /* Wait till the thread becomes runnable */
+            while (hthread->state != HTHREAD_STATE_ACTIVE);
+
             /* Send the signal to the thread */
-            tgkill(getpid(), hthread_one_one->tid, sig_num);
+            tgkill(getpid(), ONE_ONE(hthread)->tid, sig_num);
             break;
 
         case HTHREAD_TYPE_MANY_MANY:
-            /* Upcast the thread handle to many many thread */
-            hthread_many_many = (struct _HThreadManyMany *)hthread;
-            /* Wait till the target thread is not scheduled */
+
+            /*  */
             break;
 
         default:
@@ -594,9 +593,14 @@ void hthread_deinit(void) {
  *
  * When the one-one thread is being loaded the getcontext is not getting
  * initialized before the signal handler is running. Which is causing the
- * program to segfault.
+ * program to segfault. (we can set the context of the function)
  *
  * Handle blocking and unblocking of the signal masks to handle this
  *
  * Do something for handling signal handling in many-many
+ *
+ * The cloned kernel thread inherits the sig mask of the parent thread
+ *
+ * ucontext_t has uc_sigmask - Use that for many-many case to provide local
+ *                             sigmask to each user thread
  */

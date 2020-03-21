@@ -33,13 +33,8 @@ void hthread_list_init(void) {
  */
 void hthread_list_add(HThread hthread) {
 
-    struct _HThreadManyMany *hthread_many_many;
-
-    /* Get the many many structure to be added */
-    hthread_many_many = (struct _HThreadManyMany *)hthread;
-
     /* Link the list member of the structure to the global list */
-    list_enqueue(&_hthread_list, hthread_many_many, list_mem);
+    list_enqueue(&_hthread_list, MANY_MANY(hthread), list_mem);
 }
 
 /**
@@ -60,7 +55,7 @@ HThread hthread_list_get(void) {
                                      list_mem);
 
     /* Return the thread handle */
-    return (HThread)hthread_many_many;
+    return BASE(hthread_many_many);
 }
 
 /**

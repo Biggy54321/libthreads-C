@@ -22,6 +22,9 @@ typedef enum _HThreadType {
  */
 typedef enum _HThreadState {
 
+    /* Thread is in initialization phase i.e. not runnable */
+    HTHREAD_STATE_INIT,
+
     /* Thread is active i.e. runnable */
     HTHREAD_STATE_ACTIVE,
 
@@ -77,9 +80,6 @@ struct _HThreadManyMany {
     /* Include the base members of the thread control block */
     HTHREAD_BASE_MEMBERS;
 
-    /* Is scheduled */
-    int is_sched;
-
     /* Current context of the thread */
     ucontext_t *curr_cxt;
 
@@ -107,6 +107,18 @@ struct _HThreadOneOne {
     /* Return context */
     ucontext_t *ret_cxt;
 };
+
+/* One one thread local storage size */
+#define HTHREAD_ONE_ONE_TLS_SIZE   (sizeof(struct _HThreadOneOne))
+/* Many many thread local storage size */
+#define HTHREAD_MANY_MANY_TLS_SIZE (sizeof(struct _HThreadManyMany))
+
+/* Upcast the general thread handle to one one thread handle */
+#define ONE_ONE(hthread)   ((struct _HThreadOneOne *)(hthread))
+/* Upcast the general thread handle to many many thread handle */
+#define MANY_MANY(hthread) ((struct _HThreadManyMany *)(hthread))
+/* Downcast the any specific handle to general handle */
+#define BASE(thread)        ((struct _HThread *)thread)
 
 /**
  * Thread handle for the application program

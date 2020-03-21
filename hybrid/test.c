@@ -18,7 +18,7 @@ void *func1(void *arg) {
 
     print("Inside func1\n");
 
-    /* while (1); */
+    while (1);
 
     hthread_exit((void *)128);
 }
@@ -42,18 +42,12 @@ void main() {
     HThread t1, t2, t3;
     void *r1, *r2, *r3;
 
-    sigset_t mask;
-    sigfillset(&mask);
-    sigprocmask(SIG_BLOCK, &mask, NULL);
-
     hthread_init(3);
 
     signal(SIGUSR1, handler);
 
     t1 = hthread_create(func1, NULL, HTHREAD_TYPE_ONE_ONE);
-
     t2 = hthread_create(func2, NULL, HTHREAD_TYPE_MANY_MANY);
-
     t3 = hthread_create(func3, NULL, HTHREAD_TYPE_MANY_MANY);
 
     hthread_kill(t1, SIGUSR1);
