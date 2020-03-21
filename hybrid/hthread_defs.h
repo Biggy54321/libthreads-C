@@ -118,7 +118,7 @@ struct _HThreadOneOne {
 /* Upcast the general thread handle to many many thread handle */
 #define MANY_MANY(hthread) ((struct _HThreadManyMany *)(hthread))
 /* Downcast the any specific handle to general handle */
-#define BASE(thread)        ((struct _HThread *)thread)
+#define BASE(thread)       ((struct _HThread *)thread)
 
 /**
  * Thread handle for the application program
