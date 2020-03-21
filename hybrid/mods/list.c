@@ -75,6 +75,9 @@ ListMember *do_list_dequeue(List *list) {
  */
 void list_init(List *list) {
 
+    /* Check for errors */
+    assert(list);
+
     /* Set the head and tail to null */
     list->head = list->tail = NULL;
 }
