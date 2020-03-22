@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
+#include <stdlib.h>
 
 #include "./hthread.h"
 
@@ -15,6 +16,12 @@ void handler(int sig) {
 }
 
 void *func1(void *arg) {
+
+    sigset_t mask;
+
+    sigaddset(&mask, SIGUSR1);
+
+    /* sigprocmask(SIG_BLOCK, &mask, NULL); */
 
     print("Inside func1\n");
 
@@ -49,6 +56,8 @@ void main() {
     t1 = hthread_create(func1, NULL, HTHREAD_TYPE_ONE_ONE);
     t2 = hthread_create(func2, NULL, HTHREAD_TYPE_MANY_MANY);
     t3 = hthread_create(func3, NULL, HTHREAD_TYPE_MANY_MANY);
+
+    for (int i = 0; i < 128; i++);
 
     hthread_kill(t1, SIGUSR1);
 

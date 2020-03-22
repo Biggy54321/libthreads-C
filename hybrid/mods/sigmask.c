@@ -1,13 +1,14 @@
 #include <assert.h>
+#include <stddef.h>
 
-#include "./sig_mask.h"
+#include "./sigmask.h"
 
 /**
  * @brief Block all the signals
  *
  * Sets a mask so as to block all the signals
  */
-void sig_mask_block_all(void) {
+void sigmask_block_all(void) {
 
     sigset_t mask;
 
@@ -23,7 +24,7 @@ void sig_mask_block_all(void) {
  *
  * Sets a mask so as to unblock all the signals
  */
-void sig_mask_unblock_all(void) {
+void sigmask_unblock_all(void) {
 
     sigset_t mask;
 
@@ -42,16 +43,16 @@ void sig_mask_unblock_all(void) {
  *
  * @param[in] mask Pointer to the signal set
  */
-void sig_mask_block(sigset_t *mask) {
+void sigmask_block(sigset_t *mask) {
 
     /* Check for errors */
     assert(mask);
 
     /* Unblock all the signals */
-    sig_mask_unblock_all();
+    sigmask_unblock_all();
 
     /* Block the requested signal set */
-    sigprocmask(SIG_BLOCK, &mask, NULL);
+    sigprocmask(SIG_BLOCK, mask, NULL);
 }
 
 /**
@@ -62,16 +63,16 @@ void sig_mask_block(sigset_t *mask) {
  *
  * @param[in] mask Pointer to the signal set
  */
-void sig_mask_unblock(sigset_t *mask) {
+void sigmask_unblock(sigset_t *mask) {
 
     /* Check for errors */
     assert(mask);
 
     /* Block all the signals */
-    sig_mask_block_all();
+    sigmask_block_all();
 
     /* Unblock the requested signals */
-    sigprocmask(SIG_UNBLOCK, &mask, NULL);
+    sigprocmask(SIG_UNBLOCK, mask, NULL);
 }
 
 /**
@@ -81,7 +82,7 @@ void sig_mask_unblock(sigset_t *mask) {
  *
  * @param[out] mask Pointer to the signal set
  */
-void sig_mask_get_mask(sigset_t *mask) {
+void sigmask_get_mask(sigset_t *mask) {
 
     /* Check for errors */
     assert(mask);

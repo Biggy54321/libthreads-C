@@ -337,8 +337,14 @@ HThread hthread_create(void *(*start)(void *), void *arg, HThreadType type) {
             /* Create a many-many thread */
             hthread = _many_many_create(start, arg);
 
+            /* Lock the thread list */
+            hthread_list_lock();
+
             /* Add the thread to the list */
             hthread_list_add(hthread);
+
+            /* Unlock the thread list */
+            hthread_list_unlock();
             break;
 
         default:
@@ -384,8 +390,8 @@ void hthread_join(HThread hthread, void **ret) {
             break;
 
         case HTHREAD_TYPE_MANY_MANY:
-            /* Free the many many thread paritially */
 
+            /* Free the many many thread paritially */
             _many_many_free(hthread, 0);
             break;
 
@@ -457,6 +463,53 @@ HThread hthread_self(void) {
 }
 
 /**
+ * @brief Update the signal mask
+ *
+ * Changes the current signal mask of thread
+ *
+ * @param[in] how What action to perform
+ * @param[in] set Pointer to the signal set to be worked upon
+ * @param[out] oldset Pointer to the signal set which will store the old signal
+ *             mask
+ */
+void hthread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
+
+    HThread hthread;
+
+    /* Check for errors */
+    assert(set);
+    assert(oldset);
+
+    /* Get the thread handle */
+    hthread = BASE(get_fs());
+
+    /* Depending on the thread type */
+    switch (hthread->type) {
+
+        case HTHREAD_TYPE_ONE_ONE:
+
+            /* Set the signal mask directly */
+            sigprocmask(how, set, oldset);
+            break;
+
+        case HTHREAD_TYPE_MANY_MANY:
+
+            /* Set the old mask from the current context */
+            *oldset = MANY_MANY(hthread)->curr_cxt->uc_sigmask;
+
+            /* Update the mask */
+            MANY_MANY(hthread)->curr_cxt->uc_sigmask;
+
+            /* How to update the mask bro */
+
+            break;
+
+        default:
+            break;
+    }
+}
+
+/**
  * @brief Kill a thread
  *
  * Send a signal to the target thread
@@ -483,7 +536,7 @@ void hthread_kill(HThread hthread, int sig_num) {
 
         case HTHREAD_TYPE_MANY_MANY:
 
-            /*  */
+
             break;
 
         default:
@@ -563,34 +616,27 @@ void hthread_deinit(void) {
     /* Deinitialize the kernel threads */
     hthread_kernel_threads_deinit();
 
-    /* Deinitialize the user threads from the thread list */
+    /* Lock the list */
+    hthread_list_lock();
+
+    /* Deinitialize all the many many threads */
     while (!hthread_list_is_empty()) {
 
         /* Get the thread from the list */
         hthread = hthread_list_get();
 
-        /* Depending on the type */
-        switch (hthread->type) {
-
-            case HTHREAD_TYPE_ONE_ONE:
-                /* Free the one one thread completely */
-                _one_one_free(hthread, 1);
-                break;
-
-            case HTHREAD_TYPE_MANY_MANY:
-                /* Free the many many thread completely */
-                _many_many_free(hthread, 1);
-                break;
-
-            default:
-                break;
-        }
+        /* Free the many many thread completely */
+        _many_many_free(hthread, 1);
     }
+
+    /* Lock the list */
+    hthread_list_unlock();
 }
 
 /**
  * Handle signals in many-many user threads using the uc_sigmask member of the
  * ucontext_t structure
  *
- * 
+ * There is no book keeping in the library for one-one threads, so how do we
+ * free its resources on exit of main thread?
  */
