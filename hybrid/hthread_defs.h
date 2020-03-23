@@ -86,9 +86,27 @@ struct _HThreadManyMany {
     /* Return context of the scheduler */
     ucontext_t *ret_cxt;
 
+    /* Signals to be delivered */
+    List pend_sig;
+
+    /* Lock for the signal list */
+    Lock sig_lock;
+
     /* Linked list links */
     ListMember list_mem;
 };
+
+/**
+ * Signal node
+ */
+typedef struct _Signal {
+
+    /* Signal number */
+    int sig;
+
+    /* Linked list link */
+    ListMember list_mem;
+} Signal;
 
 /**
  * One-one thread control block structure

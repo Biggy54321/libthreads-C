@@ -23,6 +23,8 @@
  */
 void timer_set(Timer *timer, void (*event_func)(int), long millisecs) {
 
+    struct sigaction sig_act;
+
     /* Check for errors */
     assert(timer);
     assert(event_func);
@@ -40,7 +42,13 @@ void timer_set(Timer *timer, void (*event_func)(int), long millisecs) {
     timer->event._sigev_un._tid = KERNEL_THREAD_ID;
 
     /* Initialize the signal handler i.e. event function */
-    signal(SIGALRM, event_func);
+    sig_act.sa_handler = event_func;
+    /* Initialize the signal mask while the function to all blocks */
+    sigfillset(&sig_act.sa_mask);
+    /* Set the flags to none */
+    sig_act.sa_flags = 0;
+    /* Set the action for the signal */
+    sigaction(SIGALRM, &sig_act, NULL);
 }
 
 /**

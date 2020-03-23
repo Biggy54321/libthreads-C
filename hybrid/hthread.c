@@ -6,6 +6,7 @@
 #include "./mods/utils.h"
 #include "./mods/lock.h"
 #include "./mods/stack.h"
+#include "./mods/sig.h"
 #include "./hthread.h"
 #include "./hthread_list.h"
 #include "./hthread_kernel.h"
@@ -216,6 +217,12 @@ static HThread _many_many_create(void *(*start)(void *), void *arg) {
     /* Make the context */
     makecontext(MANY_MANY(hthread)->curr_cxt, _many_many_start, 0);
 
+    /* Initialize the pending signals list */
+    list_init(&MANY_MANY(hthread)->pend_sig);
+
+    /* Initialize the signal lock */
+    lock_init(&MANY_MANY(hthread)->sig_lock);
+
     return BASE(hthread);
 }
 
@@ -258,6 +265,8 @@ void _one_one_free(HThread hthread, int free_tcb) {
  */
 void _many_many_free(HThread hthread, int free_tcb) {
 
+    Signal *signal;
+
     /* Check for errors */
     assert(hthread);
 
@@ -269,6 +278,22 @@ void _many_many_free(HThread hthread, int free_tcb) {
 
     /* Free the return context */
     free(MANY_MANY(hthread)->ret_cxt);
+
+    /* Lock the signal list lock */
+    lock_acquire(&MANY_MANY(hthread)->sig_lock);
+
+    /* While the list is not empty */
+    while (!list_is_empty(&MANY_MANY(hthread)->pend_sig)) {
+
+        /* Get the signal */
+        signal = list_dequeue(&MANY_MANY(hthread)->pend_sig, Signal, list_mem);
+
+        /* Free the signal */
+        free(signal);
+    }
+
+    /* Lock the signal list lock */
+    lock_release(&MANY_MANY(hthread)->sig_lock);
 
     /* If tcb is to be freed */
     if (free_tcb) {
@@ -478,42 +503,20 @@ HThread hthread_self(void) {
  * @param[out] oldset Pointer to the signal set which will store the old signal
  *             mask. Will store the previously block signal set
  */
-/* void hthread_sigmask(int how, sigset_t *set, sigset_t *oldset) { */
+void hthread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
 
-/*     HThread hthread; */
+    HThread hthread;
 
-/*     /\* Check for errors *\/ */
-/*     assert(set); */
-/*     assert(oldset); */
+    /* Check for errors */
+    assert(set);
+    assert(oldset);
 
-/*     /\* Get the thread handle *\/ */
-/*     hthread = BASE(get_fs()); */
+    /* Remove SIGALRM from the signal set (just becuz i use it) */
+    sigdelset(set, SIGALRM);
 
-/*     /\* Depending on the thread type *\/ */
-/*     switch (hthread->type) { */
-
-/*         case HTHREAD_TYPE_ONE_ONE: */
-
-/*             /\* Set the signal mask directly *\/ */
-/*             sigprocmask(how, set, oldset); */
-/*             break; */
-
-/*         case HTHREAD_TYPE_MANY_MANY: */
-
-/*             /\* Set the old mask from the current context *\/ */
-/*             *oldset = MANY_MANY(hthread)->curr_cxt->uc_sigmask; */
-
-/*             /\* Update the mask *\/ */
-/*             MANY_MANY(hthread)->curr_cxt->uc_sigmask; */
-
-/*             /\* How to update the mask bro *\/ */
-
-/*             break; */
-
-/*         default: */
-/*             break; */
-/*     } */
-/* } */
+    /* Call the signal process mask function */
+    sigprocmask(how, set, oldset);
+}
 
 /**
  * @brief Kill a thread
@@ -524,6 +527,8 @@ HThread hthread_self(void) {
  * @param[in] sig_num Signal number
  */
 void hthread_kill(HThread hthread, int sig_num) {
+
+    Signal *signal;
 
     /* Check for errors */
     assert(hthread);
@@ -537,13 +542,25 @@ void hthread_kill(HThread hthread, int sig_num) {
         case HTHREAD_TYPE_ONE_ONE:
 
             /* Send the signal to the thread */
-            tgkill(getpid(), ONE_ONE(hthread)->tid, sig_num);
+            sig_send(ONE_ONE(hthread)->tid, sig_num);
             break;
 
         case HTHREAD_TYPE_MANY_MANY:
 
-            /* Add the signal to the list of deliverables */
-            
+            /* Create a new signal */
+            signal = (Signal *)malloc(sizeof(Signal));
+
+            /* Initialize the signal */
+            signal->sig = sig_num;
+
+            /* Lock the signal list */
+            lock_acquire(&MANY_MANY(hthread)->sig_lock);
+
+            /* Add the signal to the thread's list of deliverables */
+            list_enqueue(&MANY_MANY(hthread)->pend_sig, signal, list_mem);
+
+            /* Unlock the signal list */
+            lock_release(&MANY_MANY(hthread)->sig_lock);
             break;
 
         default:
@@ -641,6 +658,11 @@ void hthread_deinit(void) {
 }
 
 /**
+ * The one-one thread control blocks are not being freed at the hthread_deinit()
+ * call
+ */
+
+/**
  * Sigmask function will be same as sigprocmask for both types of the threads
  * Switching of the sigmask in case of all the user threads is handled
  * respectively
@@ -651,4 +673,32 @@ void hthread_deinit(void) {
  * 2. Many-many - Signal cannot be sent directly, as the user thread floats on
  *                the kernel threads. Hence before and after interrupt the
  *                same user thread may be mapped on different kernel thread
+ *
+ * For many-many -
+ * 1. hthread_kill() will add to a list of signals which should be delivered
+ *    in the next scheduling turn of the thread.
+ * 2. These signals will be set by the kernel thread scheduler on itself just
+ *    before scheduling the user thread on it using tgkill().
+ * 3. However the handlers corresponding to the set signals will not be called
+ *    in the scheduler context, as scheduler blocks all the signals. Hence all
+ *    the signals will be pending in the scheduler context.
+ * 4. When the user context is set on the kernel thread, its signal mask will
+ *    come into play and the signals which are not blocked will result in
+ *    the invokation of their handlers.
+ * 5. However problem arises when the user thread is handling a signal and
+ *    timer interrupt occurs and the user thread switches to scheduler. The
+ *    problem arises because the same user thread may now be scheduled on
+ *    some other kernel thread later on. But we have already set the signals
+ *    which were to be delivered to the user thread on the previous kernel
+ *    thread.
+ * 6. Hence we can make the user thread run on the same kernel thread till
+ *    any signals are pending to be delivered to the user thread.
+ * 7. Even if we do the above mentioned things, one corner case remains which
+ *    is if we have many signals to be delivered and we set them. Now one of
+ *    them called exit, but other signal handlers have not executed yet. So
+ *    in this case should we let all the signals to run and then exit or just
+ *    exit. If we just exit then the pending signals will be invoked in the user
+ *    thread which was not killed by those signals. However as the linux kernel
+ *    does not provide any such provision for directing the signals to the user
+ *    space threads, this problem will pertain.
  */
