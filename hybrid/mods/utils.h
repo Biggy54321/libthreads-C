@@ -47,24 +47,24 @@ static inline int futex(int *uaddr, int futex_op, int val) {
  * @brief Set FS register value
  * @param[in] addr Address to be set
  */
-static inline void set_fs(long addr) {
+static inline void set_fs(void *addr) {
 
     /* Use the syscall wrapper */
-    syscall(SYS_arch_prctl, ARCH_SET_FS, addr);
+    syscall(SYS_arch_prctl, ARCH_SET_FS, (long)addr);
 }
 
 /**
  * @brief Get FS register value
  * @return Value of the FS register (long)
  */
-static inline long get_fs(void) {
+static inline void *get_fs(void) {
 
     long addr;
 
     /* Use the syscall wrapper */
     syscall(SYS_arch_prctl, ARCH_GET_FS, &addr);
 
-    return addr;
+    return (void *)addr;
 }
 
 #endif

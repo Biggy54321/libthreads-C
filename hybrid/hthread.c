@@ -63,13 +63,13 @@ static int _one_one_start(void *arg) {
         /* If the state of the thread is active */
     if (hthread->state == HTHREAD_STATE_INIT) {
 
-        /* Set the thread state to active */
+        /* Set the state as inactive */
         hthread->state = HTHREAD_STATE_ACTIVE;
 
         /* Call the start routine */
         hthread->ret = hthread->start(hthread->arg);
 
-        /* Set the state to inactive */
+        /* Set the state as inactive */
         hthread->state = HTHREAD_STATE_INACTIVE;
     }
 
@@ -424,7 +424,13 @@ void hthread_exit(void *ret) {
     /* Set the return value */
     hthread->ret = ret;
 
-    /* Change the thread state */
+    /* Check if the thread is active */
+    if (hthread->state != HTHREAD_STATE_ACTIVE) {
+
+        return;
+    }
+
+    /* Change the state to inactive */
     hthread->state = HTHREAD_STATE_INACTIVE;
 
     /* Exit according to the thread type */
@@ -470,44 +476,44 @@ HThread hthread_self(void) {
  * @param[in] how What action to perform
  * @param[in] set Pointer to the signal set to be worked upon
  * @param[out] oldset Pointer to the signal set which will store the old signal
- *             mask
+ *             mask. Will store the previously block signal set
  */
-void hthread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
+/* void hthread_sigmask(int how, sigset_t *set, sigset_t *oldset) { */
 
-    HThread hthread;
+/*     HThread hthread; */
 
-    /* Check for errors */
-    assert(set);
-    assert(oldset);
+/*     /\* Check for errors *\/ */
+/*     assert(set); */
+/*     assert(oldset); */
 
-    /* Get the thread handle */
-    hthread = BASE(get_fs());
+/*     /\* Get the thread handle *\/ */
+/*     hthread = BASE(get_fs()); */
 
-    /* Depending on the thread type */
-    switch (hthread->type) {
+/*     /\* Depending on the thread type *\/ */
+/*     switch (hthread->type) { */
 
-        case HTHREAD_TYPE_ONE_ONE:
+/*         case HTHREAD_TYPE_ONE_ONE: */
 
-            /* Set the signal mask directly */
-            sigprocmask(how, set, oldset);
-            break;
+/*             /\* Set the signal mask directly *\/ */
+/*             sigprocmask(how, set, oldset); */
+/*             break; */
 
-        case HTHREAD_TYPE_MANY_MANY:
+/*         case HTHREAD_TYPE_MANY_MANY: */
 
-            /* Set the old mask from the current context */
-            *oldset = MANY_MANY(hthread)->curr_cxt->uc_sigmask;
+/*             /\* Set the old mask from the current context *\/ */
+/*             *oldset = MANY_MANY(hthread)->curr_cxt->uc_sigmask; */
 
-            /* Update the mask */
-            MANY_MANY(hthread)->curr_cxt->uc_sigmask;
+/*             /\* Update the mask *\/ */
+/*             MANY_MANY(hthread)->curr_cxt->uc_sigmask; */
 
-            /* How to update the mask bro */
+/*             /\* How to update the mask bro *\/ */
 
-            break;
+/*             break; */
 
-        default:
-            break;
-    }
-}
+/*         default: */
+/*             break; */
+/*     } */
+/* } */
 
 /**
  * @brief Kill a thread
@@ -522,13 +528,13 @@ void hthread_kill(HThread hthread, int sig_num) {
     /* Check for errors */
     assert(hthread);
 
+    /* Wait till the target thread is not properly initialized */
+    while (hthread->state == HTHREAD_STATE_INIT);
+
     /* Depending on the target thread type */
     switch (hthread->type) {
 
         case HTHREAD_TYPE_ONE_ONE:
-
-            /* Wait till the thread becomes runnable */
-            while (hthread->state != HTHREAD_STATE_ACTIVE);
 
             /* Send the signal to the thread */
             tgkill(getpid(), ONE_ONE(hthread)->tid, sig_num);
@@ -536,7 +542,8 @@ void hthread_kill(HThread hthread, int sig_num) {
 
         case HTHREAD_TYPE_MANY_MANY:
 
-
+            /* Add the signal to the list of deliverables */
+            
             break;
 
         default:
@@ -634,9 +641,14 @@ void hthread_deinit(void) {
 }
 
 /**
- * Handle signals in many-many user threads using the uc_sigmask member of the
- * ucontext_t structure
+ * Sigmask function will be same as sigprocmask for both types of the threads
+ * Switching of the sigmask in case of all the user threads is handled
+ * respectively
  *
- * There is no book keeping in the library for one-one threads, so how do we
- * free its resources on exit of main thread?
+ * In kill -
+ * 1. One-one - Directly signal can be sent to the user thread as it is
+ *              mapped to the same kernel thread all the time
+ * 2. Many-many - Signal cannot be sent directly, as the user thread floats on
+ *                the kernel threads. Hence before and after interrupt the
+ *                same user thread may be mapped on different kernel thread
  */

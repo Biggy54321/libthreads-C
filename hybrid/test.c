@@ -8,20 +8,22 @@
 
 #define print(str) write(1, str, strlen(str))
 
-void handler(int sig) {
+void handler1(int sig) {
 
-    print("Inside the handler\n");
+    print("Inside the handler1\n");
+
+    while (1);
+}
+
+void handler2(int sig) {
+
+    print("Inside the handler2\n");
 
     hthread_exit((void *)1024);
 }
 
+
 void *func1(void *arg) {
-
-    sigset_t mask;
-
-    sigaddset(&mask, SIGUSR1);
-
-    /* sigprocmask(SIG_BLOCK, &mask, NULL); */
 
     print("Inside func1\n");
 
@@ -51,15 +53,15 @@ void main() {
 
     hthread_init(3);
 
-    signal(SIGUSR1, handler);
+    signal(SIGUSR1, handler1);
+    signal(SIGUSR2, handler2);
 
     t1 = hthread_create(func1, NULL, HTHREAD_TYPE_ONE_ONE);
     t2 = hthread_create(func2, NULL, HTHREAD_TYPE_MANY_MANY);
     t3 = hthread_create(func3, NULL, HTHREAD_TYPE_MANY_MANY);
 
-    for (int i = 0; i < 128; i++);
-
     hthread_kill(t1, SIGUSR1);
+    hthread_kill(t1, SIGUSR2);
 
     hthread_join(t1, &r1);
     hthread_join(t2, &r2);

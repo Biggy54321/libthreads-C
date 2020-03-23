@@ -2,6 +2,7 @@
 
 #include "./mods/utils.h"
 #include "./mods/timer.h"
+#include "./mods/sigmask.h"
 #include "./hthread_list.h"
 #include "./hthread_sched.h"
 
@@ -39,7 +40,11 @@ int hthread_sched_dispatch(void *arg) {
 
     Timer timer;
     HThread hthread;
-    long old_fs;
+    void *old_fs;
+    int i = 0;
+
+    /* Block all the signals */
+    sigmask_block_all();
 
     /* Initialize the one shot timer event */
     timer_set(&timer, hthread_sched_yield, TIME_SLICE_ms);
@@ -68,7 +73,10 @@ int hthread_sched_dispatch(void *arg) {
         hthread_list_unlock();
 
         /* Set the FS register value to the TLS */
-        set_fs((long)hthread);
+        set_fs(hthread);
+
+        /* Set the signals */
+        
 
         /* Start the timer */
         timer_start(&timer);
@@ -78,6 +86,9 @@ int hthread_sched_dispatch(void *arg) {
 
         /* Stop the timer */
         timer_stop(&timer);
+
+        /* Clear the pending signals */
+
 
         /* Reset the FS register value to old value */
         set_fs(old_fs);
