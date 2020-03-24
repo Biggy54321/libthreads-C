@@ -1,4 +1,4 @@
 # libthreads-C
 
-A implementation of one-one, many-one and many-many thread models for user
+A implementation of one-one, many-many and hybrid threading models for user
 threads in C.
