@@ -2,6 +2,7 @@
 #define _HTHREAD_DEFS_H_
 
 #include <ucontext.h>
+
 #include "./mods/list.h"
 #include "./mods/lock.h"
 
@@ -97,7 +98,7 @@ struct _HThreadManyMany {
 };
 
 /**
- * Signal node
+ * Signal node to denote pending signals in many-many threads
  */
 typedef struct _Signal {
 
@@ -125,11 +126,6 @@ struct _HThreadOneOne {
     /* Return context */
     ucontext_t *ret_cxt;
 };
-
-/* One one thread local storage size */
-#define HTHREAD_ONE_ONE_TLS_SIZE   (sizeof(struct _HThreadOneOne))
-/* Many many thread local storage size */
-#define HTHREAD_MANY_MANY_TLS_SIZE (sizeof(struct _HThreadManyMany))
 
 /* Upcast the general thread handle to one one thread handle */
 #define ONE_ONE(hthread)   ((struct _HThreadOneOne *)(hthread))

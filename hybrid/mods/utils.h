@@ -3,7 +3,9 @@
 
 #define _GNU_SOURCE
 #include <unistd.h>
+#include <stdlib.h>
 #include <stdatomic.h>
+#include <assert.h>
 #include <syscall.h>
 #include <asm/prctl.h>
 #include <sys/prctl.h>
@@ -26,6 +28,9 @@ pid_t gettid(void);
  */
 static inline int atomic_cas(int *addr, int old_val, int new_val) {
 
+    /* Check for errors */
+    assert(addr);
+
     /* Use the atomic function to compare and exchange */
     return atomic_compare_exchange_strong(addr, &old_val, new_val);
 }
@@ -38,6 +43,9 @@ static inline int atomic_cas(int *addr, int old_val, int new_val) {
  * @return 0 or errno
  */
 static inline int futex(int *uaddr, int futex_op, int val) {
+
+    /* Check for errors */
+    assert(uaddr);
 
     /* Use the system call wrapper around the futex system call */
     return syscall(SYS_futex, uaddr, futex_op, val, NULL, NULL, 0);
@@ -66,5 +74,23 @@ static inline void *get_fs(void) {
 
     return (void *)addr;
 }
+
+/**
+ * @brief Mallocs and asserts the requested type variable
+ */
+#define alloc_mem(type)                         \
+    ({                                          \
+        /* Get the pointer of the given type */ \
+        type *_ptr;                             \
+                                                \
+        /* Allocate memory */                   \
+        _ptr = (type *)malloc(sizeof(type));    \
+                                                \
+        /* Check for errors */                  \
+        assert(_ptr);                           \
+                                                \
+        /* Return the pointer */                \
+        _ptr;                                   \
+    })
 
 #endif

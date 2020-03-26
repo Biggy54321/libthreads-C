@@ -61,7 +61,7 @@ static int _one_one_start(void *arg) {
     /* Get the current context */
     getcontext(ONE_ONE(hthread)->ret_cxt);
 
-        /* If the state of the thread is active */
+    /* If the state of the thread is active */
     if (hthread->state == HTHREAD_STATE_INIT) {
 
         /* Set the state as inactive */
@@ -89,9 +89,7 @@ static HThread _one_one_create(void *(*start)(void *), void *arg) {
     void *stack_top;
 
     /* Allocate the thread control block */
-    hthread = BASE(malloc(HTHREAD_ONE_ONE_TLS_SIZE));
-    /* Check for errors */
-    assert(hthread);
+    hthread = BASE(alloc_mem(struct _HThreadOneOne));
 
     /* Get the thread id */
     hthread->id = _get_nxt_id();
@@ -112,9 +110,7 @@ static HThread _one_one_create(void *(*start)(void *), void *arg) {
     stack_alloc(&ONE_ONE(hthread)->stack);
 
     /* Allocate the context */
-    ONE_ONE(hthread)->ret_cxt = (ucontext_t *)malloc(sizeof(ucontext_t));
-    /* Check for errors */
-    assert(ONE_ONE(hthread)->ret_cxt);
+    ONE_ONE(hthread)->ret_cxt = alloc_mem(ucontext_t);
 
     /* Find the stack top */
     stack_top = ONE_ONE(hthread)->stack.ss_sp + ONE_ONE(hthread)->stack.ss_size;
@@ -131,6 +127,8 @@ static HThread _one_one_create(void *(*start)(void *), void *arg) {
                                   &hthread->wait,
                                   hthread,
                                   &hthread->wait);
+    /* Check for errors */
+    assert(ONE_ONE(hthread)->tid != -1);
 
     /* Return the thread handle */
     return hthread;
@@ -173,9 +171,7 @@ static HThread _many_many_create(void *(*start)(void *), void *arg) {
     HThread hthread;
 
     /* Allocate the thread control block */
-    hthread = BASE(malloc(HTHREAD_MANY_MANY_TLS_SIZE));
-    /* Check for errors */
-    assert(hthread);
+    hthread = BASE(alloc_mem(struct _HThreadManyMany));
 
     /* Get the next thread id */
     hthread->id = _get_nxt_id();
@@ -196,14 +192,10 @@ static HThread _many_many_create(void *(*start)(void *), void *arg) {
     hthread->wait = 1;
 
     /* Allocate the current context */
-    MANY_MANY(hthread)->curr_cxt = (ucontext_t *)malloc(sizeof(ucontext_t));
-    /* Check for errors */
-    assert(MANY_MANY(hthread)->curr_cxt);
+    MANY_MANY(hthread)->curr_cxt = alloc_mem(ucontext_t);
 
     /* Allocate the return context */
-    MANY_MANY(hthread)->ret_cxt = (ucontext_t *)malloc(sizeof(ucontext_t));
-    /* Check for errors */
-    assert(MANY_MANY(hthread)->ret_cxt);
+    MANY_MANY(hthread)->ret_cxt = alloc_mem(ucontext_t);
 
     /* Set the current context */
     getcontext(MANY_MANY(hthread)->curr_cxt);
@@ -548,7 +540,7 @@ void hthread_kill(HThread hthread, int sig_num) {
         case HTHREAD_TYPE_MANY_MANY:
 
             /* Create a new signal */
-            signal = (Signal *)malloc(sizeof(Signal));
+            signal = alloc_mem(Signal);
 
             /* Initialize the signal */
             signal->sig = sig_num;
@@ -701,4 +693,31 @@ void hthread_deinit(void) {
  *    thread which was not killed by those signals. However as the linux kernel
  *    does not provide any such provision for directing the signals to the user
  *    space threads, this problem will pertain.
+ */
+
+/**
+ * Do not schedule the user threads which are waiting for a thread which is
+ * already joined.
+ * Do not schedule the user threads which are waiting for an active thread to
+ * join.
+ * Make use of queue for active join?
+ *
+ * @brief
+ * 1. The target thread is surely over when its wait variable becomes zero from
+ *    nonzero
+ * 2. When a thread tries to join with the target thread, then there are two
+ *    cases which will be checked atomically:
+ *    a. Target thread is not finished: In this case the calling thread
+ *       will change its state to wait (This will cause one-one thread to
+ *       wait using a futex and many-many thread to be removed from the ready
+ *       queue). Hence a thread in wait state will not be scheduled either by
+ *       the library or the kernel. When the target thread gets finished it
+ *       will check the wait list if it is nonempty then it will make the first
+ *       task runnable again.
+ *    b. Target thread is finished: In this case the calling thread will
+ *       not wait.
+ */
+
+/**
+ * Should i really improve the mutex locks to use queues?
  */

@@ -39,9 +39,7 @@ static KThread *_kernel_thread_create(void) {
     KThread *kthread;
 
     /* Allocate the kernel thread structure */
-    kthread = (KThread *)malloc(sizeof(KThread));
-    /* Check for errors */
-    assert(kthread);
+    kthread = alloc_mem(KThread);
 
     /* Allocate a stack */
     stack_alloc(&kthread->stack);

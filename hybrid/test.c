@@ -85,5 +85,4 @@ void main() {
     /* printf("%d\n", r3); */
 
     hthread_deinit();
-
 }

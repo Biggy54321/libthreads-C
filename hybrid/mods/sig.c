@@ -4,8 +4,6 @@
 #include <stddef.h>
 #include <signal.h>
 
-#include <string.h>
-
 #include "./sig.h"
 
 /**

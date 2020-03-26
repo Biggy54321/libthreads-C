@@ -73,6 +73,8 @@ int hthread_sched_dispatch(void *arg) {
         /* Unlock the list */
         hthread_list_unlock();
 
+        repeat:
+
         /* Lock the signal list */
         lock_acquire(&MANY_MANY(hthread)->sig_lock);
 
@@ -90,8 +92,6 @@ int hthread_sched_dispatch(void *arg) {
 
         /* Unlock the signal list */
         lock_release(&MANY_MANY(hthread)->sig_lock);
-
-        repeat:
 
         /* Set the FS register value to the TLS */
         set_fs(hthread);

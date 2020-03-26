@@ -2,7 +2,7 @@
 #define _LOCK_H_
 
 /**
- * Lock definition
+ * Lock handle
  */
 typedef int Lock;
 

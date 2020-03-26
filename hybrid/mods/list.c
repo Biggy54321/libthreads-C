@@ -65,38 +65,3 @@ ListMember *do_list_dequeue(List *list) {
 
     return head;
 }
-
-/**
- * @brief Initialize the list
- *
- * Initializes the list to hold zero elements
- *
- * @param[out] list Pointer to the list instance
- */
-void list_init(List *list) {
-
-    /* Check for errors */
-    assert(list);
-
-    /* Set the head and tail to null */
-    list->head = list->tail = NULL;
-}
-
-/**
- * @brief Is list empty
- *
- * Checks if the list is empty by conforming if the head and tail pointers are
- * pointing to anything or not
- *
- * @param[in] list Pointer to the list instance
- * @return 0 if not empty
- * @return 1 if empty
- */
-int list_is_empty(List *list) {
-
-    /* Check for errors */
-    assert(list);
-
-    /* Check if both the pointers are NULL */
-    return (!list->head && !list->tail);
-}

@@ -2,7 +2,6 @@
 #define _TIMER_H_
 
 #include <time.h>
-
 #include <signal.h>
 
 /**
@@ -18,7 +17,6 @@ typedef struct _Timer {
 
     /* Signal event structure */
     struct sigevent event;
-
 } Timer;
 
 void timer_set(Timer *timer, void (*event_func)(int), long millisecs);

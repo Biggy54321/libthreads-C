@@ -5,7 +5,9 @@
 #include <assert.h>
 
 /**
- * Doubly linked list member of structure
+ * Doubly linked list member to chain different structures
+ *
+ * @note Insert this as a structure member which needs to be chained as a list
  */
 typedef struct _ListMember {
 
@@ -14,7 +16,6 @@ typedef struct _ListMember {
 
     /* Backward pointer */
     struct _ListMember *prev;
-
 } ListMember;
 
 /**
@@ -27,7 +28,6 @@ typedef struct _List {
 
     /* Pointer to the last list member */
     ListMember *tail;
-
 } List;
 
 /**
@@ -39,10 +39,6 @@ typedef struct _List {
 void do_list_enqueue(List *list, ListMember *new);
 
 ListMember *do_list_dequeue(List *list);
-
-void list_init(List *list);
-
-int list_is_empty(List *list);
 
 /**
  * @brief Enqueue a new node to the list
@@ -76,5 +72,40 @@ int list_is_empty(List *list);
                                                                 \
         (type *)((void *)do_list_dequeue((list)) - _offset);    \
     })
+
+/**
+ * @brief Initialize the list
+ *
+ * Initializes the list to hold zero elements
+ *
+ * @param[out] list Pointer to the list instance
+ */
+static inline void list_init(List *list) {
+
+    /* Check for errors */
+    assert(list);
+
+    /* Set the head and tail to null */
+    list->head = list->tail = NULL;
+}
+
+/**
+ * @brief Is list empty
+ *
+ * Checks if the list is empty by conforming if the head and tail pointers are
+ * pointing to anything or not
+ *
+ * @param[in] list Pointer to the list instance
+ * @return 0 if not empty
+ * @return 1 if empty
+ */
+static inline int list_is_empty(List *list) {
+
+    /* Check for errors */
+    assert(list);
+
+    /* Check if both the pointers are NULL */
+    return (!list->head && !list->tail);
+}
 
 #endif
