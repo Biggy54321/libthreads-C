@@ -43,12 +43,18 @@ int hthread_sched_dispatch(void *arg) {
     HThread hthread;
     void *old_fs;
     Signal *signal;
+    struct sigaction action;
 
     /* Block all the signals */
     sig_block_all();
 
+    /* Initialize the signal action for timeout */
+    action.sa_handler = hthread_sched_yield;
+    action.sa_flags = 0;
+    sigfillset(&action.sa_mask);
+
     /* Initialize the one shot timer event */
-    timer_set(&timer, hthread_sched_yield, TIME_SLICE_ms);
+    timer_set(&timer, action, TIME_SLICE_ms);
 
     /* Get the current FS register value */
     old_fs = get_fs();

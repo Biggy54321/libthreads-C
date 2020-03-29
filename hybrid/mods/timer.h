@@ -19,7 +19,7 @@ typedef struct _Timer {
     struct sigevent event;
 } Timer;
 
-void timer_set(Timer *timer, void (*event_func)(int), long millisecs);
+void timer_set(Timer *timer, struct sigaction action, long millisecs);
 
 void timer_start(Timer *timer);
 
