@@ -366,11 +366,44 @@ HThread hthread_create(void *(*start)(void *), void *arg, HThreadType type) {
  */
 void hthread_join(HThread hthread, void **ret) {
 
+    HThread curr_thread;
+
     /* Check for errors */
     assert(hthread);
 
+    /* Get the current thread handle */
+    curr_thread = hthread_self();
+
     /* Wait while the wait word is not cleared */
-    while (!atomic_cas(&hthread->wait, 0, 1));
+    while (!atomic_cas(&hthread->wait, 0, 1)) {
+
+        /* If the thread is already joined */
+        if ((hthread->state == HTHREAD_STATE_JOINED) ||
+            (hthread->state == HTHREAD_STATE_WAIT)) {
+
+            /* Update the state to wait */
+            curr_thread->state = HTHREAD_STATE_WAIT;
+
+            /* Depending on the thread type */
+            switch (curr_thread->type) {
+
+                case HTHREAD_TYPE_ONE_ONE:
+
+                    /* Return to the scheduler */
+                    setcontext(ONE_TLS(curr_thread)->ret_cxt);
+                    break;
+
+                case HTHREAD_TYPE_MANY_MANY:
+
+                    /* Return to the scheduler */
+                    setcontext(MANY_TLS(curr_thread)->ret_cxt);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
 
     /* If the return value is requested */
     if (ret) {

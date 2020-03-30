@@ -25,6 +25,9 @@ typedef enum HThreadState {
     /* Thread is active i.e. runnable */
     HTHREAD_STATE_ACTIVE,
 
+    /* Thread is waiting infinitely */
+    HTHREAD_STATE_WAIT,
+
     /* Thread is inactive i.e. not runnable*/
     HTHREAD_STATE_INACTIVE,
 
