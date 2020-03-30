@@ -9,19 +9,19 @@
  *
  * @note Insert this as a structure member which needs to be chained as a list
  */
-typedef struct _ListMember {
+typedef struct ListMember {
 
     /* Forward pointer */
-    struct _ListMember *next;
+    struct ListMember *next;
 
     /* Backward pointer */
-    struct _ListMember *prev;
+    struct ListMember *prev;
 } ListMember;
 
 /**
  * Doubly linked list structure
  */
-typedef struct _List {
+typedef struct List {
 
     /* Pointer to the first list member */
     ListMember *head;
@@ -47,13 +47,13 @@ ListMember *do_list_dequeue(List *list);
  * @param[in] new Pointer to the any structure to be added
  * @param[in] mem Name of the ListMember member in the structure type of #new
  */
-#define list_enqueue(list, new, mem)            \
-    {                                           \
-        assert((list));                         \
-        assert((new));                          \
-                                                \
-        do_list_enqueue((list), &(new)->mem);   \
-    }
+#define list_enqueue(list, new, mem)                \
+    {                                               \
+        assert((list));                             \
+        assert((new));                              \
+                                                    \
+        do_list_enqueue((list), &(new)->mem);       \
+    }                                               \
 
 /**
  * @brief Dequeue a node from the list
@@ -73,21 +73,8 @@ ListMember *do_list_dequeue(List *list);
         (type *)((void *)do_list_dequeue((list)) - _offset);    \
     })
 
-/**
- * @brief Initialize the list
- *
- * Initializes the list to hold zero elements
- *
- * @param[out] list Pointer to the list instance
- */
-static inline void list_init(List *list) {
-
-    /* Check for errors */
-    assert(list);
-
-    /* Set the head and tail to null */
-    list->head = list->tail = NULL;
-}
+/* List initializer */
+#define LIST_INITIALIZER (List){NULL, NULL}
 
 /**
  * @brief Is list empty

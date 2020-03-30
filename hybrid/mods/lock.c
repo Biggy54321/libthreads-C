@@ -4,19 +4,6 @@
 #include "./lock.h"
 
 /**
- * @brief Initialize the lock
- *
- * Sets the lock status to not acquired
- *
- * @param[in] Pointer to the lock variable
- */
-void lock_init(Lock *lock) {
-
-    /* Set the status to not acquired */
-    *lock = LOCK_NOT_ACQUIRED;
-}
-
-/**
  * @brief Acquire the lock
  *
  * Atomically checks if the lock is not acquired and then acquires it. Busy

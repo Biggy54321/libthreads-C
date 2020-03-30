@@ -7,7 +7,7 @@
 /**
  * One shot timer
  */
-typedef struct _Timer {
+typedef struct Timer {
 
     /* Timer structure */
     timer_t timerid;

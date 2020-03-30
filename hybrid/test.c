@@ -1,12 +1,9 @@
-#define _GNU_SOURCE
-#include <unistd.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <string.h>
-#include <signal.h>
 #include <stdlib.h>
 
 #include "./hthread.h"
-#include "./mods/timer.h"
 
 #define print(str) write(1, str, strlen(str))
 
