@@ -13,6 +13,9 @@
 #include "./hthread_cntl.h"
 #include "./hthread_sig.h"
 
+/* Get the deallocation functions */
+extern void _many_many_free(HThread hthread, int free_tcb);
+
 /* Clone flags for the kernel thread of the scheduler */
 #define _MM_SCHED_CLONE_FLAGS                   \
     (CLONE_VM | CLONE_FS | CLONE_FILES |        \
@@ -153,6 +156,12 @@ static int _mm_sched_dispatch(void *arg) {
 
                 /* Clear the wait state */
                 hthread->wait = 0;
+                break;
+
+            case HTHREAD_STATE_WAIT:
+
+                /* Free the many-many thread resources paritially */
+                _many_many_free(hthread, 0);
                 break;
 
             default:

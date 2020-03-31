@@ -509,6 +509,18 @@ HThread hthread_self(void) {
  */
 void hthread_deinit(void) {
 
+    HThread hthread;
+
     /* Deinitialize the schedulers */
     mm_sched_deinit();
+
+    /* While the ready list is not empty */
+    while (!mm_rdy_list_is_empty()) {
+
+        /* Get the many many user thread */
+        hthread = mm_rdy_list_get();
+
+        /* Free the thread */
+        _many_many_free(hthread, 1);
+    }
 }
