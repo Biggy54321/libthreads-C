@@ -12,7 +12,7 @@
 #include "./hthread_sig.h"
 
 /* Next thread id */
-static int _nxt_id = 0;
+static int _nxt_id = 1;
 /* Lock for the global id */
 static Lock _lock = LOCK_INITIALIZER;
 

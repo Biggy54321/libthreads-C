@@ -49,7 +49,7 @@ typedef struct _ThreadControlBlock {
     jmp_buf exit_env;
 
     /* Initialization status */
-    int is_init;
+    uint32_t is_init;
 
 } ThreadControlBlock;
 
