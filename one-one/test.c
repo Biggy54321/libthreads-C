@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
 #include "./thread.h"
+
 #include <sys/types.h>
 #include <signal.h>
 
@@ -11,12 +13,10 @@ void handler(int sig) {
 
     print("Inside the handler\n");
 
-    thread_exit((void *)128);
+    thread_exit((void *)127);
 }
 
 void *func1(void *arg) {
-
-    signal(SIGUSR1, handler);
 
     sleep(5);
 
@@ -37,10 +37,10 @@ void main() {
     Thread td1, td2;
     void *ret1, *ret2;
 
+    signal(SIGUSR1, handler);
+
     thread_create(&td1, func1, NULL);
     thread_create(&td2, func2, NULL);
-
-    sleep(1);
 
     thread_kill(td1, SIGUSR1);
 

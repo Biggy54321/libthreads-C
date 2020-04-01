@@ -18,7 +18,7 @@ typedef struct HThreadMutex {
 } HThreadMutex;
 
 /* Thread mutex initializer */
-#define HTHREAD_MUTEX_INITIALIZER {NULL, LOCK_NOT_ACQUIRED}
+#define HTHREAD_MUTEX_INITIALIZER (HThreadMutex){NULL, LOCK_NOT_ACQUIRED}
 
 void hthread_mutex_lock(HThreadMutex *mutex);
 

@@ -48,6 +48,9 @@ typedef struct _ThreadControlBlock {
     /* Exit jump environment */
     jmp_buf exit_env;
 
+    /* Initialization status */
+    int is_init;
+
 } ThreadControlBlock;
 
 /**
@@ -61,19 +64,6 @@ typedef struct _ThreadControlBlock {
 typedef ThreadControlBlock *Thread;
 
 /**
- * Thread spinlocks definition
- */
-typedef struct _ThreadSpinLock {
-
-    /* Owner of the lock */
-    Thread owner_thread;
-
-    /* The lock word on which to perform locking */
-    uint32_t lock_word;
-
-} ThreadSpinLock;
-
-/**
  * Return statuses of the thread library
  */
 typedef enum _ThreadReturn {
@@ -82,10 +72,5 @@ typedef enum _ThreadReturn {
     THREAD_FAIL,                /* The thread function was not successful */
 
 } ThreadReturn;
-
-/**
- * Macro to check error condition and return failure status
- */
-#define RETURN_FAIL_IF(cond) {if ((cond)) { return THREAD_FAIL; }}
 
 #endif

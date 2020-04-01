@@ -16,8 +16,6 @@
  */
 void hthread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
 
-    HThread hthread;
-
     /* Check for errors */
     assert(set);
     assert(oldset);
