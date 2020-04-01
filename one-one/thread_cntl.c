@@ -17,6 +17,9 @@
 /* Long jump return value (should be non-zero) */
 #define LONGJMP_RET_VAL (1u)
 
+/* Main thread handle */
+static Thread _main_thread;
+
 /**
  * @brief The thread start function which initiates the actual start
  *        function
@@ -66,7 +69,7 @@ ThreadReturn thread_create(
     }
 
     /* Create the thread TLS */
-    *thread = malloc(THREAD_CONTROL_BLOCK_SIZE);
+    *thread = (Thread)malloc(THREAD_CONTROL_BLOCK_SIZE);
     /* Check for errors */
     if (!(*thread)) {
 
@@ -161,8 +164,16 @@ ThreadReturn thread_join(
  */
 Thread thread_self(void) {
 
-    /* Rerad the FS register value */
-    return (Thread)get_fs();
+    /* If the thread id is same as the main thread */
+    if (gettid() == _main_thread->thread_id) {
+
+        /* Return the main thread handle */
+        return _main_thread;
+    } else {
+
+        /* Read the FS register value */
+        return (Thread)get_fs();
+    }
 }
 
 /**
@@ -179,6 +190,52 @@ void thread_exit(ptr_t return_value) {
     /* Set the return value */
     thread->return_value = return_value;
 
-    /* Jump to the exit location */
-    longjmp(thread->exit_env, LONGJMP_RET_VAL);
+    /* If the current thread is the main thread */
+    if (thread != _main_thread) {
+
+        /* Jump to the exit location */
+        longjmp(thread->exit_env, LONGJMP_RET_VAL);
+    } else {
+
+        /* Directly exit */
+        exit(0);
+    }
+}
+
+/**
+ * @brief Startup function to be ran before main to initialize the TLS
+ *        of the main thread
+ */
+void thread_main_init(void) {
+
+    /* Create the thread block */
+    _main_thread = (Thread)malloc(THREAD_CONTROL_BLOCK_SIZE);
+
+    /* Check for errors */
+    if (!_main_thread) {
+
+        /* Exit */
+        exit(1);
+    }
+
+    /* Set the stack base */
+    _main_thread->stack_base = NULL;
+
+    /* Set the stack limit */
+    _main_thread->stack_limit = 0;
+
+    /* Initialize the start routine */
+    _main_thread->start_routine = NULL;
+
+    /* Initialize the start routine argument */
+    _main_thread->argument = NULL;
+
+    /* Initialize the futex word */
+    _main_thread->futex_word = gettid();
+
+    /* Set the initialization status */
+    _main_thread->is_init = 1;
+
+    /* Set the thread id */
+    _main_thread->thread_id = gettid();
 }

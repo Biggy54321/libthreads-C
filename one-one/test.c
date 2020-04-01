@@ -6,6 +6,7 @@
 
 #include <sys/types.h>
 #include <signal.h>
+#include "./mods/utils.h"
 
 #define print(str) write(STDOUT_FILENO, str, strlen(str))
 
@@ -34,21 +35,29 @@ void *func2(void *arg) {
 
 void main() {
 
-    Thread td1, td2;
+    Thread td1, td2, me;
     void *ret1, *ret2;
 
     signal(SIGUSR1, handler);
 
-    thread_create(&td1, func1, NULL);
-    thread_create(&td2, func2, NULL);
+    me = thread_self();
 
-    thread_kill(td1, SIGUSR1);
+    /* thread_kill(me, SIGUSR1); */
 
-    thread_join(td1, &ret1);
-    thread_join(td2, &ret2);
+    /* thread_create(&td1, func1, NULL); */
+    /* thread_create(&td2, func2, NULL); */
 
-    print("In main\n");
+    /* thread_kill(td1, SIGUSR1); */
 
-    printf("%d\n", (int)ret1);
-    printf("%d\n", (int)ret2);
+    /* thread_join(td1, &ret1); */
+    /* thread_join(td2, &ret2); */
+
+    /* print("In main\n"); */
+
+    /* printf("%d\n", (int)ret1); */
+    /* printf("%d\n", (int)ret2); */
+
+    print("GGWP\n");
+
+    thread_exit(NULL);
 }

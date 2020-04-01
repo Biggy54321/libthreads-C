@@ -16,4 +16,6 @@ Thread thread_self(void);
 
 void thread_exit(ptr_t return_value);
 
+void thread_main_init(void) __attribute__((constructor));
+
 #endif
