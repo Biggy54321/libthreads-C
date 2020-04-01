@@ -14,14 +14,25 @@
  */
 void hthread_mutex_lock(HThreadMutex *mutex) {
 
+    HThread hthread;
+
     /* Check for errors */
     assert(mutex);
+
+    /* Get the thread handle */
+    hthread = hthread_self();
+
+    /* If the current owner of the lock is the caller thread itself */
+    if (mutex->owner == hthread) {
+
+        return;
+    }
 
     /* Acquire the lock */
     lock_acquire(&mutex->lock);
 
     /* Set the owner to the current thread */
-    mutex->owner = hthread_self();
+    mutex->owner = hthread;
 }
 
 /**
@@ -33,8 +44,19 @@ void hthread_mutex_lock(HThreadMutex *mutex) {
  */
 void hthread_mutex_unlock(HThreadMutex *mutex) {
 
+    HThread hthread;
+
     /* Check for errors */
     assert(mutex);
+
+    /* Get the thread handle */
+    hthread = hthread_self();
+
+    /* If the owner of the mutex is not the current thread */
+    if (mutex->owner != hthread) {
+
+        return;
+    }
 
     /* Set the owner to no one */
     mutex->owner = NULL;
