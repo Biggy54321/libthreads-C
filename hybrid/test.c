@@ -24,27 +24,47 @@ void handler2(int sig) {
 }
 
 
+void *func2(void *arg) {
+
+
+
+    print("Inside func2\n");
+
+
+
+    hthread_exit((void *)256);
+}
+
 void *func1(void *arg) {
 
+    HThread t2;
+
     print("Inside func1\n");
+
+    t2 = hthread_create(func2, NULL, HTHREAD_TYPE_MANY_MANY);
+
+    hthread_join(t2, NULL);
 
     hthread_exit((void *)128);
 }
 
-void *func2(void *arg) {
-
-    print("Inside func2\n");
-
-    while (1);
-
-    hthread_exit((void *)256);
-}
 
 void *func3(void *arg) {
 
     print("Inside func3\n");
 
     hthread_exit((void *)512);
+}
+
+HThread func_test(HThread t1) {
+
+    HThread t2;
+
+    t2 = hthread_create(func2, NULL, HTHREAD_TYPE_MANY_MANY);
+
+    hthread_join(t1, NULL);
+
+    return t2;
 }
 
 void main() {
@@ -57,29 +77,32 @@ void main() {
 
     hthread_init(1);
 
-    /* t1 = hthread_create(func1, NULL, HTHREAD_TYPE_ONE_ONE); */
-    t2 = hthread_create(func2, NULL, HTHREAD_TYPE_MANY_MANY);
-    /* t3 = hthread_create(func3, NULL, HTHREAD_TYPE_MANY_MANY); */
+    t1 = hthread_create(func1, NULL, HTHREAD_TYPE_MANY_MANY);
+    /* t1 = hthread_create(func2, NULL, HTHREAD_TYPE_MANY_MANY); */
+    /* /\* t3 = hthread_create(func3, NULL, HTHREAD_TYPE_MANY_MANY); *\/ */
 
-    hthread_kill(t2, SIGUSR1);
+    /* t2 = func_test(t1); */
 
-    for (int i = 0; i < 1000000; i++) {
+    hthread_join(t1, NULL);
+    /* hthread_kill(t2, SIGUSR1); */
 
-        i = i - 1;
-        i = i + 1;
-        i = i - 1;
-        i = i + 1;
-    }
+    /* for (int i = 0; i < 1000000; i++) { */
 
-    hthread_kill(t2, SIGUSR2);
+    /*     i = i - 1; */
+    /*     i = i + 1; */
+    /*     i = i - 1; */
+    /*     i = i + 1; */
+    /* } */
 
-    /* hthread_join(t1, &r1); */
-    hthread_join(t2, &r2);
-    /* hthread_join(t3, &r3); */
+    /* hthread_kill(t2, SIGUSR2); */
 
-    /* printf("%d\n", r1); */
-    printf("%d\n", r2);
-    /* printf("%d\n", r3); */
+    /* /\* hthread_join(t1, &r1); *\/ */
+    /* hthread_join(t2, &r2); */
+    /* /\* hthread_join(t3, &r3); *\/ */
+
+    /* /\* printf("%d\n", r1); *\/ */
+    /* printf("%d\n", r2); */
+    /* /\* printf("%d\n", r3); *\/ */
 
     hthread_deinit();
 }

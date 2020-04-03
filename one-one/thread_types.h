@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <setjmp.h>
 
+#include "./mods/lock.h"
+
 /**
  * Pointer definition
  */
@@ -39,9 +41,6 @@ typedef struct _ThreadControlBlock {
     /* Padding for stack canary */
     uint64_t __pad;
 
-    /* Futex word */
-    uint32_t futex_word;
-
     /* Thread identifier */
     uint32_t thread_id;
 
@@ -49,7 +48,19 @@ typedef struct _ThreadControlBlock {
     jmp_buf exit_env;
 
     /* Initialization status */
-    uint32_t is_init;
+    uint8_t is_init;
+
+    /* Join word */
+    uint32_t join_word;
+
+    /* Joined status */
+    uint8_t is_joined;
+
+    /* Thread handle of the thread waiting on the current thread to join */
+    struct _ThreadControlBlock *join_thread;
+
+    /* Thread member lock */
+    Lock mem_lock;
 
 } ThreadControlBlock;
 

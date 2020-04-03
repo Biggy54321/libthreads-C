@@ -92,14 +92,23 @@ ThreadReturn thread_create(
     /* Set the initialization status */
     (*thread)->is_init = 0;
 
+    /* Set the join status */
+    (*thread)->is_joined = 0;
+
+    /* Set the join thread */
+    (*thread)->join_thread = NULL;
+
+    /* Initialize the lock */
+    (*thread)->mem_lock = LOCK_INITIALIZER;
+
     /* Create the kernel thread */
     (*thread)->thread_id = clone(_thread_start,
                                  (*thread)->stack_base + (*thread)->stack_limit,
                                  CLONE_FLAGS,
                                  NULL,
-                                 &((*thread)->futex_word),
+                                 &((*thread)->join_word),
                                  *thread,
-                                 &((*thread)->futex_word));
+                                 &((*thread)->join_word));
     /* Check for errors */
     if ((*thread)->thread_id == -1) {
 
@@ -118,6 +127,7 @@ ThreadReturn thread_join(
         Thread thread,
         ptr_t *return_value) {
 
+    Thread curr_thread;
     int ret_val;
 
     /* Check for errors */
@@ -126,17 +136,64 @@ ThreadReturn thread_join(
         return THREAD_FAIL;
     }
 
+    /* Acquire the member lock */
+    lock_acquire(&thread->mem_lock);
+
+    /* Check for join status */
+    if (thread->is_joined) {
+
+        /* Release member lock and return */
+        lock_release(&thread->mem_lock);
+        return THREAD_FAIL;
+    }
+
+    /* Check if any other thread is already waiting */
+    if (thread->join_thread) {
+
+        /* Release member lock and return */
+        lock_release(&thread->mem_lock);
+        return THREAD_FAIL;
+    }
+
+    /* Get the thread handle */
+    curr_thread = thread_self();
+
+    /* Check if the thread is not going to wait for itself */
+    if (thread == curr_thread) {
+
+        /* Release member lock and return */
+        lock_release(&thread->mem_lock);
+        return THREAD_FAIL;
+    }
+
+    /* Check for deadlock */
+    if (curr_thread->join_thread == thread) {
+
+        /* Release member lock and return */
+        lock_release(&thread->mem_lock);
+        return THREAD_FAIL;
+    }
+
+    /* Set the current thread as the join thread */
+    thread->join_thread = curr_thread;
+
+    /* Release member lock */
+    lock_release(&thread->mem_lock);
+
     /* Wait till the target thread is initialized */
     while (!thread->is_init);
 
     /* Wait on the target thread's futex word */
-    ret_val = futex(&thread->futex_word, FUTEX_WAIT, thread->thread_id);
+    ret_val = futex(&thread->join_word, FUTEX_WAIT, thread->thread_id);
 
     /* Check for errors */
     if ((ret_val == -1) && (errno != EAGAIN)) {
 
         return THREAD_FAIL;
     }
+
+    /* Update the join status */
+    thread->is_joined = 1;
 
     /* Free the stack */
     if (stack_free(&thread->stack_base, &thread->stack_limit) == -1) {
@@ -230,12 +287,21 @@ void thread_main_init(void) {
     /* Initialize the start routine argument */
     _main_thread->argument = NULL;
 
-    /* Initialize the futex word */
-    _main_thread->futex_word = gettid();
-
     /* Set the initialization status */
     _main_thread->is_init = 1;
 
     /* Set the thread id */
     _main_thread->thread_id = gettid();
+
+    /* Initialize the futex word */
+    _main_thread->join_word = gettid();
+
+    /* Set the join status */
+    _main_thread->is_joined = 0;
+
+    /* Set the join thread */
+    _main_thread->join_thread = NULL;
+
+    /* Initialize the member lock */
+    _main_thread->mem_lock = LOCK_INITIALIZER;
 }

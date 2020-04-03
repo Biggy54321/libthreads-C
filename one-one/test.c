@@ -40,24 +40,20 @@ void main() {
 
     signal(SIGUSR1, handler);
 
-    me = thread_self();
-
     /* thread_kill(me, SIGUSR1); */
 
     /* thread_create(&td1, func1, NULL); */
-    /* thread_create(&td2, func2, NULL); */
+    thread_create(&td2, func2, NULL);
 
     /* thread_kill(td1, SIGUSR1); */
 
     /* thread_join(td1, &ret1); */
-    /* thread_join(td2, &ret2); */
+    thread_join(td2, &ret2);
 
-    /* print("In main\n"); */
+    print("In main\n");
 
     /* printf("%d\n", (int)ret1); */
-    /* printf("%d\n", (int)ret2); */
-
-    print("GGWP\n");
+    printf("%d\n", (int)ret2);
 
     thread_exit(NULL);
 }

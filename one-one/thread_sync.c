@@ -25,7 +25,7 @@ ThreadReturn thread_mutex_init(ThreadMutex *mutex) {
     mutex->owner_thread = NULL;
 
     /* Set the lock status to not acquired */
-    mutex->lock_word = MUTEX_NOT_ACQUIRED;
+    mutex->lock_word = THREAD_LOCK_NOT_ACQUIRED;
 
     return THREAD_OK;
 }
@@ -61,8 +61,8 @@ ThreadReturn thread_mutex_lock(ThreadMutex *mutex) {
 
         /* Atomically try to acquire the lock */
         if (atomic_cas(&mutex->lock_word,
-                       MUTEX_NOT_ACQUIRED,
-                       MUTEX_ACQUIRED)) {
+                       THREAD_LOCK_NOT_ACQUIRED,
+                       THREAD_LOCK_ACQUIRED)) {
 
             /* Set the owner to the current thread */
             mutex->owner_thread = thread;
@@ -71,7 +71,7 @@ ThreadReturn thread_mutex_lock(ThreadMutex *mutex) {
         }
 
         /* Wait till the lock is not released by the current owner */
-        ret_val = futex(&mutex->lock_word, FUTEX_WAIT, MUTEX_ACQUIRED);
+        ret_val = futex(&mutex->lock_word, FUTEX_WAIT, THREAD_LOCK_ACQUIRED);
 
         /* Check for errors */
         if ((ret_val == -1) && (errno != EAGAIN)) {
@@ -114,8 +114,8 @@ ThreadReturn thread_mutex_unlock(ThreadMutex *mutex) {
 
     /* Release the lock atomically */
     if (atomic_cas(&mutex->lock_word,
-                   MUTEX_ACQUIRED,
-                   MUTEX_NOT_ACQUIRED)) {
+                   THREAD_LOCK_ACQUIRED,
+                   THREAD_LOCK_NOT_ACQUIRED)) {
 
         /* Wake up the waiting process */
         ret_val = futex(&mutex->lock_word, FUTEX_WAKE, NB_WAKEUP_PROCESSES);
@@ -126,6 +126,95 @@ ThreadReturn thread_mutex_unlock(ThreadMutex *mutex) {
             return THREAD_FAIL;
         }
     }
+
+    return THREAD_OK;
+}
+
+/**
+ * @brief Initialize the spinlock
+ * @param[in] spinlock Pointer to the spinlock instance
+ * @return Thread return status
+ */
+ThreadReturn thread_spin_init(ThreadSpinLock *spinlock) {
+
+    /* Check for errors */
+    if (!spinlock) {
+
+        return THREAD_FAIL;
+    }
+
+    /* Set the owner to the none */
+    spinlock->owner_thread = NULL;
+
+    /* Set the lock status to not acquired */
+    spinlock->lock_word = THREAD_LOCK_NOT_ACQUIRED;
+
+    return THREAD_OK;
+}
+
+/**
+ * @brief Acquires the spinlock
+ * @param[in/out] spinlock Pointer to the spinlock instance
+ * @note The call is blocking and will return only if the lock is acquired
+ * @return Thread return status
+ */
+ThreadReturn thread_spin_lock(ThreadSpinLock *spinlock) {
+
+    Thread thread;
+
+    /* Check for errors */
+    if (!spinlock) {
+
+        return THREAD_FAIL;
+    }
+
+    /* Get the thread handle */
+    thread = thread_self();
+
+    /* Check if the current thread already owns the spinlock */
+    if (spinlock->owner_thread == thread) {
+
+        return THREAD_OK;
+    }
+
+    /* While we dont get the lock */
+    while (!atomic_cas(&spinlock->lock_word, THREAD_LOCK_NOT_ACQUIRED, THREAD_LOCK_ACQUIRED));
+
+    /* Set the current thread as the owner */
+    spinlock->owner_thread = thread;
+
+    return THREAD_OK;
+}
+
+/**
+ * @brief Releases the spinlock
+ * @param[in/out] spinlock Pointer to the spinlock instance
+ * @return Thread return status
+ */
+ThreadReturn thread_spin_unlock(ThreadSpinLock *spinlock) {
+
+    Thread thread;
+
+    /* Check for errors */
+    if (!spinlock) {
+
+        return THREAD_FAIL;
+    }
+
+    /* Get the thread handle */
+    thread = thread_self();
+
+    /* If the current thread does not own the lock */
+    if (spinlock->owner_thread != thread) {
+
+        return THREAD_OK;
+    }
+
+    /* Set the owner to none */
+    spinlock->owner_thread = NULL;
+
+    /* Release the lock */
+    atomic_cas(&spinlock->lock_word, THREAD_LOCK_ACQUIRED, THREAD_LOCK_NOT_ACQUIRED);
 
     return THREAD_OK;
 }
