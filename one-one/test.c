@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <sched.h>
 
 #include "./thread.h"
 
@@ -55,5 +56,5 @@ void main() {
     /* printf("%d\n", (int)ret1); */
     printf("%d\n", (int)ret2);
 
-    thread_exit(NULL);
+    thread_exit((void *)12);
 }

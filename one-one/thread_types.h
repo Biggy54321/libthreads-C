@@ -44,12 +44,6 @@ typedef struct _ThreadControlBlock {
     /* Thread identifier */
     uint32_t thread_id;
 
-    /* Exit jump environment */
-    jmp_buf exit_env;
-
-    /* Initialization status */
-    uint8_t is_init;
-
     /* Join word */
     uint32_t join_word;
 

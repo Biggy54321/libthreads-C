@@ -33,15 +33,8 @@ int _thread_start(ptr_t arg) {
     /* Get the thread handle */
     thread = thread_self();
 
-    /* Set the exit point */
-    if (!setjmp(thread->exit_env)) {
-
-        /* Set the initialization status */
-        thread->is_init = 1;
-
-        /* Launch the thread */
-        thread->return_value = thread->start_routine(thread->argument);
-    }
+    /* Launch the thread */
+    thread->return_value = thread->start_routine(thread->argument);
 
     return 0;
 }
@@ -88,9 +81,6 @@ ThreadReturn thread_create(
 
         return THREAD_FAIL;
     }
-
-    /* Set the initialization status */
-    (*thread)->is_init = 0;
 
     /* Set the join status */
     (*thread)->is_joined = 0;
@@ -180,9 +170,6 @@ ThreadReturn thread_join(
     /* Release member lock */
     lock_release(&thread->mem_lock);
 
-    /* Wait till the target thread is initialized */
-    while (!thread->is_init);
-
     /* Wait on the target thread's futex word */
     ret_val = futex(&thread->join_word, FUTEX_WAIT, thread->thread_id);
 
@@ -247,16 +234,18 @@ void thread_exit(ptr_t return_value) {
     /* Set the return value */
     thread->return_value = return_value;
 
-    /* If the current thread is the main thread */
-    if (thread != _main_thread) {
+    /* Exit (using the system call rather than the glibc wrapper) */
+    sys_exit(0);
+}
 
-        /* Jump to the exit location */
-        longjmp(thread->exit_env, LONGJMP_RET_VAL);
-    } else {
+/**
+ * @brief Yields the control from the calling thread. I.e. it gives up the
+ *        CPU
+ */
+int thread_yield(void) {
 
-        /* Directly exit */
-        exit(0);
-    }
+    /* Yield to the scheduler */
+    sched_yield();
 }
 
 /**
@@ -286,9 +275,6 @@ void thread_main_init(void) {
 
     /* Initialize the start routine argument */
     _main_thread->argument = NULL;
-
-    /* Set the initialization status */
-    _main_thread->is_init = 1;
 
     /* Set the thread id */
     _main_thread->thread_id = gettid();

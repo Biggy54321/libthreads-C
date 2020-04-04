@@ -47,9 +47,6 @@ ThreadReturn thread_kill(Thread thread, int sig_num) {
         return THREAD_FAIL;
     }
 
-    /* Wait till the target thread is initialized */
-    while (!thread->is_init);
-
     /* Get the thread group id */
     tgid = getpid();
 

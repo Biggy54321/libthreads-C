@@ -81,4 +81,14 @@ static inline void *get_fs(void) {
     return (void *)addr;
 }
 
+/**
+ * @brief A simple exit system call
+ * @param[in] status Integer exit status
+ */
+static inline void sys_exit(int status) {
+
+    /* Use the syscall wrapper */
+    syscall(SYS_exit, status);
+}
+
 #endif

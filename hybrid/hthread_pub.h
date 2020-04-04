@@ -1,6 +1,8 @@
 #ifndef _HTHREAD_PUB_H_
 #define _HTHREAD_PUB_H_
 
+#include "./mods/lock.h"
+
 /**
  * Thread type
  */
@@ -25,7 +27,7 @@ typedef enum HThreadState {
     /* Thread is active i.e. runnable */
     HTHREAD_STATE_ACTIVE,
 
-    /* Thread is waiting infinitely */
+    /* Thread is waiting */
     HTHREAD_STATE_WAIT,
 
     /* Thread is inactive i.e. not runnable*/
@@ -62,7 +64,10 @@ typedef enum HThreadState {
     long _pad;                                  \
                                                 \
     /* Wait word */                             \
-    int wait;
+    int wait;                                   \
+                                                \
+    /* Wait lock */                             \
+    Lock wait_lock;
 
 /**
  * General TLS

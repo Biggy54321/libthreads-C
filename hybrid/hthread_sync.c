@@ -5,62 +5,62 @@
 #include "./hthread_sync.h"
 
 /**
- * @brief Acquires the mutex lock
+ * @brief Acquires the spinlock
  *
- * Acquires the mutex lock and sets the owner of the lock to the calling thread.
+ * Acquires the spinlock and sets the owner of the lock to the calling thread.
  * The function does not return unless the lock is acquired
  *
- * @param[in] mutex Pointer to the mutex instance
+ * @param[in] spinlock Pointer to the spinlock instance
  */
-void hthread_mutex_lock(HThreadMutex *mutex) {
+void hthread_spinlock_lock(HThreadMutex *spinlock) {
 
     HThread hthread;
 
     /* Check for errors */
-    assert(mutex);
+    assert(spinlock);
 
     /* Get the thread handle */
     hthread = hthread_self();
 
     /* If the current owner of the lock is the caller thread itself */
-    if (mutex->owner == hthread) {
+    if (spinlock->owner == hthread) {
 
         return;
     }
 
     /* Acquire the lock */
-    lock_acquire(&mutex->lock);
+    lock_acquire(&spinlock->lock);
 
     /* Set the owner to the current thread */
-    mutex->owner = hthread;
+    spinlock->owner = hthread;
 }
 
 /**
- * @brief Releases the mutex lock
+ * @brief Releases the spinlock
  *
- * Releases the mutex lock and sets the owner of the lock to no one.
+ * Releases the spinlock and sets the owner of the lock to no one.
  *
- * @param[in] mutex Pointer to the mutex instance
+ * @param[in] spinlock Pointer to the spinlock instance
  */
-void hthread_mutex_unlock(HThreadMutex *mutex) {
+void hthread_spin_unlock(HThreadMutex *spinlock) {
 
     HThread hthread;
 
     /* Check for errors */
-    assert(mutex);
+    assert(spinlock);
 
     /* Get the thread handle */
     hthread = hthread_self();
 
-    /* If the owner of the mutex is not the current thread */
-    if (mutex->owner != hthread) {
+    /* If the owner of the spinlock is not the current thread */
+    if (spinlock->owner != hthread) {
 
         return;
     }
 
     /* Set the owner to no one */
-    mutex->owner = NULL;
+    spinlock->owner = NULL;
 
     /* Release the lock  */
-    lock_release(&mutex->lock);
+    lock_release(&spinlock->lock);
 }

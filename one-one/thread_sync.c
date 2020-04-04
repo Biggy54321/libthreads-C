@@ -178,7 +178,9 @@ ThreadReturn thread_spin_lock(ThreadSpinLock *spinlock) {
     }
 
     /* While we dont get the lock */
-    while (!atomic_cas(&spinlock->lock_word, THREAD_LOCK_NOT_ACQUIRED, THREAD_LOCK_ACQUIRED));
+    while (!atomic_cas(&spinlock->lock_word,
+                       THREAD_LOCK_NOT_ACQUIRED,
+                       THREAD_LOCK_ACQUIRED));
 
     /* Set the current thread as the owner */
     spinlock->owner_thread = thread;
@@ -214,7 +216,9 @@ ThreadReturn thread_spin_unlock(ThreadSpinLock *spinlock) {
     spinlock->owner_thread = NULL;
 
     /* Release the lock */
-    atomic_cas(&spinlock->lock_word, THREAD_LOCK_ACQUIRED, THREAD_LOCK_NOT_ACQUIRED);
+    atomic_cas(&spinlock->lock_word,
+               THREAD_LOCK_ACQUIRED,
+               THREAD_LOCK_NOT_ACQUIRED);
 
     return THREAD_OK;
 }

@@ -5,9 +5,9 @@
 #include "./hthread_pub.h"
 
 /**
- * Thread mutex lock
+ * Thread spinlock
 */
-typedef struct HThreadMutex {
+typedef struct HThreadSpinLock {
 
     /* Owner thread of the lock */
     HThread owner;
@@ -15,13 +15,13 @@ typedef struct HThreadMutex {
     /* Lock word */
     Lock lock;
 
-} HThreadMutex;
+} HThreadSpinLock;
 
-/* Thread mutex initializer */
-#define HTHREAD_MUTEX_INITIALIZER (HThreadMutex){NULL, LOCK_NOT_ACQUIRED}
+/* Thread spinlock initializer */
+#define HTHREAD_SPINLOCK_INITIALIZER (HThreadSpinLock){NULL, LOCK_NOT_ACQUIRED}
 
-void hthread_mutex_lock(HThreadMutex *mutex);
+void hthread_spin_lock(HThreadSpinLock *spinlock);
 
-void hthread_mutex_unlock(HThreadMutex *mutex);
+void hthread_spin_unlock(HThreadSpinLock *spinlock);
 
 #endif

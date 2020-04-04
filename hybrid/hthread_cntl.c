@@ -109,6 +109,9 @@ static HThread _one_one_create(void *(*start)(void *), void *arg) {
     /* Allocate the context */
     ONE_TLS(hthread)->ret_cxt = alloc_mem(ucontext_t);
 
+    /* Initialize the wait lock */
+    hthread->wait_lock = LOCK_INITIALIZER;
+
     /* Find the stack top */
     stack_top = ONE_TLS(hthread)->stack.ss_sp + ONE_TLS(hthread)->stack.ss_size;
 
