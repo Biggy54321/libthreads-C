@@ -2,7 +2,6 @@
 #define _THREAD_TYPES_H_
 
 #include <stdint.h>
-#include <setjmp.h>
 
 #include "./mods/lock.h"
 
@@ -37,8 +36,10 @@ typedef enum _ThreadState {
     THREAD_STATE_WAIT_SPINLOCK,
 
     /* Thread is waiting to acquire the mutex */
-    THREAD_STATE_WAIT_MUTEX
+    THREAD_STATE_WAIT_MUTEX,
 
+    /* Thread is waiting on a condition variable */
+    THREAD_STATE_WAIT_COND
 } ThreadState;
 
 /**

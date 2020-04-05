@@ -34,10 +34,29 @@ typedef ThreadLock ThreadMutex;
 typedef ThreadLock ThreadSpinLock;
 
 /* Mutex initializer macro */
-#define THREAD_MUTEX_INITIALIZER THREAD_LOCK_INITIALIZER
+#define THREAD_MUTEX_INITIALIZER (ThreadMutex)THREAD_LOCK_INITIALIZER
 
 /* Spinlock initializer macro */
-#define THREAD_SPINLOCK_INITIALIZER THREAD_LOCK_INITIALIZER
+#define THREAD_SPINLOCK_INITIALIZER (ThreadSpinLock)THREAD_LOCK_INITIALIZER
+
+/**
+ * Condition variable definition
+ */
+typedef struct _ThreadCond {
+
+    /* Number of threads waiting  */
+    int nb_threads;
+
+    /* Pointer to the mutex linked with */
+    ThreadMutex *mutex;
+
+    /* Wait word */
+    int zero;
+
+} ThreadCond;
+
+/* Condition variable initializer */
+#define THREAD_CONDITION_INITIALIZER (ThreadCond){0, NULL, 0}
 
 ThreadReturn thread_mutex_init(ThreadMutex *mutex);
 
@@ -50,5 +69,13 @@ ThreadReturn thread_spin_init(ThreadSpinLock *spinlock);
 ThreadReturn thread_spin_lock(ThreadSpinLock *spinlock);
 
 ThreadReturn thread_spin_unlock(ThreadSpinLock *spinlock);
+
+ThreadReturn thread_cond_init(ThreadCond *cond);
+
+ThreadReturn thread_cond_wait(ThreadCond *cond, ThreadMutex *mutex);
+
+ThreadReturn thread_cond_signal(ThreadCond *cond);
+
+ThreadReturn thread_cond_broadcast(ThreadCond *cond);
 
 #endif

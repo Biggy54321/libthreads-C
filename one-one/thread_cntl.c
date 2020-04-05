@@ -251,7 +251,7 @@ void thread_exit(ptr_t return_value) {
 int thread_yield(void) {
 
     /* Yield to the scheduler */
-    sched_yield();
+    return sched_yield();
 }
 
 /**
