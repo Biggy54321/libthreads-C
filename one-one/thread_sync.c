@@ -70,6 +70,9 @@ ThreadReturn thread_mutex_lock(ThreadMutex *mutex) {
             break;
         }
 
+        /* Update the thread state */
+        thread->thread_state = THREAD_STATE_WAIT_MUTEX;
+
         /* Wait till the lock is not released by the current owner */
         ret_val = futex(&mutex->lock_word, FUTEX_WAIT, THREAD_LOCK_ACQUIRED);
 
@@ -78,6 +81,9 @@ ThreadReturn thread_mutex_lock(ThreadMutex *mutex) {
 
             return THREAD_FAIL;
         }
+
+        /* Update the thread state */
+        thread->thread_state = THREAD_STATE_RUNNING;
     }
 
     return THREAD_OK;
@@ -177,10 +183,16 @@ ThreadReturn thread_spin_lock(ThreadSpinLock *spinlock) {
         return THREAD_OK;
     }
 
+    /* Update the thread state */
+    thread->thread_state = THREAD_STATE_WAIT_SPINLOCK;
+
     /* While we dont get the lock */
     while (!atomic_cas(&spinlock->lock_word,
                        THREAD_LOCK_NOT_ACQUIRED,
                        THREAD_LOCK_ACQUIRED));
+
+    /* Update the thread state */
+    thread->thread_state = THREAD_STATE_RUNNING;
 
     /* Set the current thread as the owner */
     spinlock->owner_thread = thread;

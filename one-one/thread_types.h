@@ -17,6 +17,31 @@ typedef void *ptr_t;
 typedef void *(*thread_start_t)(void *);
 
 /**
+ * Thread state
+ */
+typedef enum _ThreadState {
+
+    /* Thread is running */
+    THREAD_STATE_RUNNING,
+
+    /* Thread has exited */
+    THREAD_STATE_EXITED,
+
+    /* Thread is joined */
+    THREAD_STATE_JOINED,
+
+    /* Thread is waiting for some thread to join */
+    THREAD_STATE_WAIT_JOIN,
+
+    /* Thread is waiting to acquire the spinlock */
+    THREAD_STATE_WAIT_SPINLOCK,
+
+    /* Thread is waiting to acquire the mutex */
+    THREAD_STATE_WAIT_MUTEX
+
+} ThreadState;
+
+/**
  * Thread control block definition
  * @note The structure members are placed so as to prevent any padding
  *       inserted by the compiler
@@ -47,8 +72,8 @@ typedef struct _ThreadControlBlock {
     /* Join word */
     uint32_t join_word;
 
-    /* Joined status */
-    uint8_t is_joined;
+    /* State of the thread */
+    ThreadState thread_state;
 
     /* Thread handle of the thread waiting on the current thread to join */
     struct _ThreadControlBlock *join_thread;

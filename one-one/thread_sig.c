@@ -46,6 +46,14 @@ ThreadReturn thread_kill(Thread thread, int sig_num) {
 
         return THREAD_FAIL;
     }
+    if (thread->thread_state == THREAD_STATE_EXITED) {
+
+        return THREAD_FAIL;
+    }
+    if (thread->thread_state == THREAD_STATE_JOINED) {
+
+        return THREAD_FAIL;
+    }
 
     /* Get the thread group id */
     tgid = getpid();

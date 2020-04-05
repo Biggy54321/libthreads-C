@@ -36,6 +36,9 @@ int _thread_start(ptr_t arg) {
     /* Launch the thread */
     thread->return_value = thread->start_routine(thread->argument);
 
+    /* Update the state */
+    thread->thread_state = THREAD_STATE_EXITED;
+
     return 0;
 }
 
@@ -75,15 +78,15 @@ ThreadReturn thread_create(
     /* Set the start routine argument */
     (*thread)->argument = argument;
 
+    /* Set the thread state */
+    (*thread)->thread_state = THREAD_STATE_RUNNING;
+
     /* Allocate the stack */
     if (stack_alloc(&((*thread)->stack_base),
                     &((*thread)->stack_limit)) == -1) {
 
         return THREAD_FAIL;
     }
-
-    /* Set the join status */
-    (*thread)->is_joined = 0;
 
     /* Set the join thread */
     (*thread)->join_thread = NULL;
@@ -126,22 +129,9 @@ ThreadReturn thread_join(
         return THREAD_FAIL;
     }
 
-    /* Acquire the member lock */
-    lock_acquire(&thread->mem_lock);
+    /* Check the thread state */
+    if (thread->thread_state == THREAD_STATE_JOINED) {
 
-    /* Check for join status */
-    if (thread->is_joined) {
-
-        /* Release member lock and return */
-        lock_release(&thread->mem_lock);
-        return THREAD_FAIL;
-    }
-
-    /* Check if any other thread is already waiting */
-    if (thread->join_thread) {
-
-        /* Release member lock and return */
-        lock_release(&thread->mem_lock);
         return THREAD_FAIL;
     }
 
@@ -151,13 +141,20 @@ ThreadReturn thread_join(
     /* Check if the thread is not going to wait for itself */
     if (thread == curr_thread) {
 
-        /* Release member lock and return */
-        lock_release(&thread->mem_lock);
         return THREAD_FAIL;
     }
 
     /* Check for deadlock */
     if (curr_thread->join_thread == thread) {
+
+        return THREAD_FAIL;
+    }
+
+    /* Acquire the member lock */
+    lock_acquire(&thread->mem_lock);
+
+    /* Check if any other thread is already waiting */
+    if (thread->join_thread) {
 
         /* Release member lock and return */
         lock_release(&thread->mem_lock);
@@ -170,8 +167,14 @@ ThreadReturn thread_join(
     /* Release member lock */
     lock_release(&thread->mem_lock);
 
+    /* Set the current thread state */
+    curr_thread->thread_state = THREAD_STATE_WAIT_JOIN;
+
     /* Wait on the target thread's futex word */
     ret_val = futex(&thread->join_word, FUTEX_WAIT, thread->thread_id);
+
+    /* Set the current thread state */
+    curr_thread->thread_state = THREAD_STATE_RUNNING;
 
     /* Check for errors */
     if ((ret_val == -1) && (errno != EAGAIN)) {
@@ -179,8 +182,8 @@ ThreadReturn thread_join(
         return THREAD_FAIL;
     }
 
-    /* Update the join status */
-    thread->is_joined = 1;
+    /* Update the target thread state */
+    thread->thread_state = THREAD_STATE_JOINED;
 
     /* Free the stack */
     if (stack_free(&thread->stack_base, &thread->stack_limit) == -1) {
@@ -234,6 +237,9 @@ void thread_exit(ptr_t return_value) {
     /* Set the return value */
     thread->return_value = return_value;
 
+    /* Update the thread state */
+    thread->thread_state = THREAD_STATE_EXITED;
+
     /* Exit (using the system call rather than the glibc wrapper) */
     sys_exit(0);
 }
@@ -261,7 +267,7 @@ void thread_main_init(void) {
     if (!_main_thread) {
 
         /* Exit */
-        exit(1);
+        sys_exit(0);
     }
 
     /* Set the stack base */
@@ -282,8 +288,8 @@ void thread_main_init(void) {
     /* Initialize the futex word */
     _main_thread->join_word = gettid();
 
-    /* Set the join status */
-    _main_thread->is_joined = 0;
+    /* Set the thread state */
+    _main_thread->thread_state = THREAD_STATE_RUNNING;
 
     /* Set the join thread */
     _main_thread->join_thread = NULL;
