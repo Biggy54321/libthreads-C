@@ -40,6 +40,7 @@ typedef enum _ThreadState {
 
     /* Thread is waiting on a condition variable */
     THREAD_STATE_WAIT_COND
+
 } ThreadState;
 
 /**
