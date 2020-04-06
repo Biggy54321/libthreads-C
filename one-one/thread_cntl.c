@@ -14,8 +14,6 @@
      CLONE_SIGHAND | CLONE_THREAD |                 \
      CLONE_SYSVSEM | CLONE_PARENT_SETTID |          \
      CLONE_CHILD_CLEARTID | CLONE_SETTLS)           \
-/* Long jump return value (should be non-zero) */
-#define LONGJMP_RET_VAL (1u)
 
 /* Main thread handle */
 static Thread _main_thread;
