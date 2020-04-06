@@ -58,24 +58,24 @@ typedef struct _ThreadCond {
 /* Condition variable initializer */
 #define THREAD_CONDITION_INITIALIZER (ThreadCond){0, NULL, 0}
 
-ThreadReturn thread_mutex_init(ThreadMutex *mutex);
+int thread_mutex_init(ThreadMutex *mutex);
 
-ThreadReturn thread_mutex_lock(ThreadMutex *mutex);
+int thread_mutex_lock(ThreadMutex *mutex);
 
-ThreadReturn thread_mutex_unlock(ThreadMutex *mutex);
+int thread_mutex_unlock(ThreadMutex *mutex);
 
-ThreadReturn thread_spin_init(ThreadSpinLock *spinlock);
+int thread_spin_init(ThreadSpinLock *spinlock);
 
-ThreadReturn thread_spin_lock(ThreadSpinLock *spinlock);
+int thread_spin_lock(ThreadSpinLock *spinlock);
 
-ThreadReturn thread_spin_unlock(ThreadSpinLock *spinlock);
+int thread_spin_unlock(ThreadSpinLock *spinlock);
 
-ThreadReturn thread_cond_init(ThreadCond *cond);
+int thread_cond_init(ThreadCond *cond);
 
-ThreadReturn thread_cond_wait(ThreadCond *cond, ThreadMutex *mutex);
+int thread_cond_wait(ThreadCond *cond, ThreadMutex *mutex);
 
-ThreadReturn thread_cond_signal(ThreadCond *cond);
+int thread_cond_signal(ThreadCond *cond);
 
-ThreadReturn thread_cond_broadcast(ThreadCond *cond);
+int thread_cond_broadcast(ThreadCond *cond);
 
 #endif

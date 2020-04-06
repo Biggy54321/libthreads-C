@@ -5,8 +5,8 @@
 
 #include "./thread_types.h"
 
-ThreadReturn thread_sigmask(int how, sigset_t *set, sigset_t *oldset);
+int thread_sigmask(int how, sigset_t *set, sigset_t *oldset);
 
-ThreadReturn thread_kill(Thread thread, int sig_num);
+int thread_kill(Thread thread, int sig_num);
 
 #endif

@@ -3,12 +3,12 @@
 
 #include "./thread_types.h"
 
-ThreadReturn thread_create(
+int thread_create(
         Thread *thread,
         thread_start_t start_routine,
         ptr_t argument);
 
-ThreadReturn thread_join(
+int thread_join(
         Thread thread,
         ptr_t *return_value);
 

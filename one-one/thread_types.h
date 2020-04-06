@@ -80,6 +80,9 @@ typedef struct _ThreadControlBlock {
     /* Thread handle of the thread waiting on the current thread to join */
     struct _ThreadControlBlock *join_thread;
 
+    /* Local error number */
+    int errno;
+
     /* Thread member lock */
     Lock mem_lock;
 
@@ -94,15 +97,5 @@ typedef struct _ThreadControlBlock {
  * Thread handle for user handling
  */
 typedef ThreadControlBlock *Thread;
-
-/**
- * Return statuses of the thread library
- */
-typedef enum _ThreadReturn {
-
-    THREAD_OK,                  /* The thread function was successful */
-    THREAD_FAIL,                /* The thread function was not successful */
-
-} ThreadReturn;
 
 #endif

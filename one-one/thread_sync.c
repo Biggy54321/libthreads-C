@@ -1,8 +1,7 @@
-#include <errno.h>
-
 #include "./mods/utils.h"
 #include "./thread_cntl.h"
 #include "./thread_sync.h"
+#include "./thread_errno.h"
 
 /**
  * Number of processes to wake up after the lock is released
@@ -12,13 +11,15 @@
 /**
  * @brief Initialize the mutex
  * @param[in] mutex Pointer to the mutex instance
- * @return Thread return status
+ * @return 0 if success
+ * @return -1 if failure, sets the errno
  */
-ThreadReturn thread_mutex_init(ThreadMutex *mutex) {
+int thread_mutex_init(ThreadMutex *mutex) {
 
+    /* Check for errors */
     if (!mutex) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* Set the owner to the none */
@@ -27,16 +28,17 @@ ThreadReturn thread_mutex_init(ThreadMutex *mutex) {
     /* Set the lock status to not acquired */
     mutex->lock_word = THREAD_LOCK_NOT_ACQUIRED;
 
-    return THREAD_OK;
+    return THREAD_SUCCESS;
 }
 
 /**
  * @brief Acquires the mutex
  * @param[in/out] mutex Pointer to the mutex instance
  * @note The call is blocking and will return only if the lock is acquired
- * @return Thread return status
+ * @return 0 if success
+ * @return -1 if failure, sets the errno
  */
-ThreadReturn thread_mutex_lock(ThreadMutex *mutex) {
+int thread_mutex_lock(ThreadMutex *mutex) {
 
     Thread thread;
     int ret_val;
@@ -44,7 +46,7 @@ ThreadReturn thread_mutex_lock(ThreadMutex *mutex) {
     /* Check for errors */
     if (!mutex) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* Get the thread handle */
@@ -53,7 +55,7 @@ ThreadReturn thread_mutex_lock(ThreadMutex *mutex) {
     /* Check if the current thread already owns the mutex */
     if (mutex->owner_thread == thread) {
 
-        return THREAD_OK;
+        return THREAD_SUCCESS;
     }
 
     /* For eternity */
@@ -86,15 +88,16 @@ ThreadReturn thread_mutex_lock(ThreadMutex *mutex) {
         thread->thread_state = THREAD_STATE_RUNNING;
     }
 
-    return THREAD_OK;
+    return THREAD_SUCCESS;
 }
 
 /**
  * @brief Releases the mutex
  * @param[in/out] mutex Pointer to the mutex instance
- * @return Thread return status
+ * @return 0 if success
+ * @return -1 if failure, sets the errno
  */
-ThreadReturn thread_mutex_unlock(ThreadMutex *mutex) {
+int thread_mutex_unlock(ThreadMutex *mutex) {
 
     Thread thread;
     int ret_val;
@@ -102,7 +105,7 @@ ThreadReturn thread_mutex_unlock(ThreadMutex *mutex) {
     /* Check for errors */
     if (!mutex) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* Get the thread handle */
@@ -112,7 +115,7 @@ ThreadReturn thread_mutex_unlock(ThreadMutex *mutex) {
     if (mutex->owner_thread != thread) {
 
         /* Just return */
-        return THREAD_OK;
+        return THREAD_SUCCESS;
     }
 
     /* Set the owner to no one */
@@ -133,20 +136,21 @@ ThreadReturn thread_mutex_unlock(ThreadMutex *mutex) {
         }
     }
 
-    return THREAD_OK;
+    return THREAD_SUCCESS;
 }
 
 /**
  * @brief Initialize the spinlock
  * @param[in] spinlock Pointer to the spinlock instance
- * @return Thread return status
+ * @return 0 if success
+ * @return -1 if failure, sets the errno
  */
-ThreadReturn thread_spin_init(ThreadSpinLock *spinlock) {
+int thread_spin_init(ThreadSpinLock *spinlock) {
 
     /* Check for errors */
     if (!spinlock) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* Set the owner to the none */
@@ -155,23 +159,24 @@ ThreadReturn thread_spin_init(ThreadSpinLock *spinlock) {
     /* Set the lock status to not acquired */
     spinlock->lock_word = THREAD_LOCK_NOT_ACQUIRED;
 
-    return THREAD_OK;
+    return THREAD_SUCCESS;
 }
 
 /**
  * @brief Acquires the spinlock
  * @param[in/out] spinlock Pointer to the spinlock instance
  * @note The call is blocking and will return only if the lock is acquired
- * @return Thread return status
+ * @return 0 if success
+ * @return -1 if failure, sets the errno
  */
-ThreadReturn thread_spin_lock(ThreadSpinLock *spinlock) {
+int thread_spin_lock(ThreadSpinLock *spinlock) {
 
     Thread thread;
 
     /* Check for errors */
     if (!spinlock) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* Get the thread handle */
@@ -180,7 +185,7 @@ ThreadReturn thread_spin_lock(ThreadSpinLock *spinlock) {
     /* Check if the current thread already owns the spinlock */
     if (spinlock->owner_thread == thread) {
 
-        return THREAD_OK;
+        return THREAD_SUCCESS;
     }
 
     /* Update the thread state */
@@ -197,22 +202,23 @@ ThreadReturn thread_spin_lock(ThreadSpinLock *spinlock) {
     /* Set the current thread as the owner */
     spinlock->owner_thread = thread;
 
-    return THREAD_OK;
+    return THREAD_SUCCESS;
 }
 
 /**
  * @brief Releases the spinlock
  * @param[in/out] spinlock Pointer to the spinlock instance
- * @return Thread return status
+ * @return 0 if success
+ * @return -1 if failure, sets the errno
  */
-ThreadReturn thread_spin_unlock(ThreadSpinLock *spinlock) {
+int thread_spin_unlock(ThreadSpinLock *spinlock) {
 
     Thread thread;
 
     /* Check for errors */
     if (!spinlock) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* Get the thread handle */
@@ -221,7 +227,7 @@ ThreadReturn thread_spin_unlock(ThreadSpinLock *spinlock) {
     /* If the current thread does not own the lock */
     if (spinlock->owner_thread != thread) {
 
-        return THREAD_OK;
+        return THREAD_SUCCESS;
     }
 
     /* Set the owner to none */
@@ -232,19 +238,21 @@ ThreadReturn thread_spin_unlock(ThreadSpinLock *spinlock) {
                THREAD_LOCK_ACQUIRED,
                THREAD_LOCK_NOT_ACQUIRED);
 
-    return THREAD_OK;
+    return THREAD_SUCCESS;
 }
 
 /**
  * @brief Initialize the condition variable
  * @param[in] cond Pointer to the condition variable instance
+ * @return 0 if success
+ * @return -1 if failure, sets the errno
  */
-ThreadReturn thread_cond_init(ThreadCond *cond) {
+int thread_cond_init(ThreadCond *cond) {
 
     /* Check for errors */
     if (!cond) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* Set the number of waiting threads */
@@ -256,32 +264,34 @@ ThreadReturn thread_cond_init(ThreadCond *cond) {
     /* Set the wait word to zero */
     cond->zero = 0;
 
-    return THREAD_OK;
+    return THREAD_SUCCESS;
 }
 
 /**
  * @brief Wait on a condition variable
  * @param[in] cond Pointer to the condition variable instance
  * @param[in] mutex Pointer to the mutex instance
+ * @return 0 if success
+ * @return -1 if failure, sets the errno
  */
-ThreadReturn thread_cond_wait(ThreadCond *cond, ThreadMutex *mutex) {
+int thread_cond_wait(ThreadCond *cond, ThreadMutex *mutex) {
 
     Thread thread;
 
     /* Check for errors */
     if (!cond) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
     if (!mutex) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* Check if mutex is locked */
     if (mutex->lock_word == THREAD_LOCK_NOT_ACQUIRED) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EPERM);
     }
 
     /* Get the thread handle */
@@ -290,7 +300,7 @@ ThreadReturn thread_cond_wait(ThreadCond *cond, ThreadMutex *mutex) {
     /* Check if the current thread is the owner of the lock */
     if (mutex->owner_thread != thread) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EPERM);
     }
 
     /* If the number of waiting threads is zero */
@@ -303,7 +313,7 @@ ThreadReturn thread_cond_wait(ThreadCond *cond, ThreadMutex *mutex) {
         /* If the already linked mutex does not match the passed mutex */
         if (cond->mutex != mutex) {
 
-            return THREAD_FAIL;
+            THREAD_RET_FAIL(EPERM);
         }
     }
 
@@ -334,55 +344,70 @@ ThreadReturn thread_cond_wait(ThreadCond *cond, ThreadMutex *mutex) {
         cond->mutex = NULL;
     }
 
-    return THREAD_OK;
+    return THREAD_SUCCESS;
 }
 
 /**
  * @brief Signal a single waiting thread to wake up which is already waiting
  *        on the given condition variable
  * @param[in] cond Pointer to the condition variable instance
+ * @return 0 if success
+ * @return -1 if failure, sets the errno
  */
-ThreadReturn thread_cond_signal(ThreadCond *cond) {
+int thread_cond_signal(ThreadCond *cond) {
+
+    int ret_val;
 
     /* Check for errors */
     if (!cond) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* If the number of threads waiting are zero */
     if (!cond->nb_threads) {
 
-        return THREAD_OK;
+        return THREAD_SUCCESS;
     }
 
     /* Wake up only one thread */
-    futex(&cond->zero, FUTEX_WAKE, 1);
+    ret_val = futex(&cond->zero, FUTEX_WAKE, 1);
 
-    return THREAD_OK;
+    /* Check for errors */
+    if ((ret_val == -1) && (errno != EAGAIN)) {
+
+        return THREAD_FAIL;
+    }
+
+    return THREAD_SUCCESS;
 }
 
 /**
  * @brief Signal a all the waiting thread to wake up which is already waiting
  *        on the given condition variable
  * @param[in] cond Pointer to the condition variable instance
+ * @return 0 if success
+ * @return -1 if failure, sets the errno
  */
-ThreadReturn thread_cond_broadcast(ThreadCond *cond) {
+int thread_cond_broadcast(ThreadCond *cond) {
 
     /* Check for errors */
     if (!cond) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* If the number of threads waiting are zero */
     if (!cond->nb_threads) {
 
-        return THREAD_OK;
+        return THREAD_SUCCESS;
     }
 
     /* Wake up only one thread */
-    futex(&cond->zero, FUTEX_WAKE, cond->nb_threads);
+    if (futex(&cond->zero, FUTEX_WAKE, cond->nb_threads) == -1) {
 
-    return THREAD_OK;
+        return THREAD_FAIL;
+    }
+
+    return THREAD_SUCCESS;
 }

@@ -2,11 +2,11 @@
 #include <sched.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <errno.h>
 
 #include "./mods/utils.h"
 #include "./mods/stack.h"
 #include "./thread_cntl.h"
+#include "./thread_errno.h"
 
 /* Clone flags for the one-one thread */
 #define CLONE_FLAGS                                 \
@@ -47,9 +47,10 @@ int _thread_start(ptr_t arg) {
  * @param[out] thread Pointer to the thread handle
  * @param[in] start_routine Start function of the thread
  * @param[in] argument Pointer to the argument
- * @return Thread return status enumeration
+ * @return 0 if success
+ * @return -1 if failure, sets the errno
  */
-ThreadReturn thread_create(
+int thread_create(
         Thread *thread,
         thread_start_t start_routine,
         ptr_t argument) {
@@ -57,11 +58,11 @@ ThreadReturn thread_create(
     /* Check for errors */
     if (!thread) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
     if (!start_routine) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* Create the thread TLS */
@@ -69,7 +70,7 @@ ThreadReturn thread_create(
     /* Check for errors */
     if (!(*thread)) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EAGAIN);
     }
 
     /* Set the start routine */
@@ -85,7 +86,7 @@ ThreadReturn thread_create(
     if (stack_alloc(&((*thread)->stack_base),
                     &((*thread)->stack_limit)) == -1) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EAGAIN);
     }
 
     /* Set the join thread */
@@ -105,18 +106,20 @@ ThreadReturn thread_create(
     /* Check for errors */
     if ((*thread)->thread_id == -1) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EAGAIN);
     }
 
-    return THREAD_OK;
+    return THREAD_SUCCESS;
 }
 
 /**
  * @brief Waits for the specified target thread to stop
  * @param[in] thread Thread handle
  * @param[out] return_value Pointer to the return value
+ * @return 0 if success
+ * @return -1 if failure, sets the errno
  */
-ThreadReturn thread_join(
+int thread_join(
         Thread thread,
         ptr_t *return_value) {
 
@@ -126,28 +129,28 @@ ThreadReturn thread_join(
     /* Check for errors */
     if (!thread) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* Check the thread state */
     if (thread->thread_state == THREAD_STATE_JOINED) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* Get the thread handle */
     curr_thread = thread_self();
 
-    /* Check if the thread is not going to wait for itself */
+    /* Check for deadlock with itself */
     if (thread == curr_thread) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EDEADLK);
     }
 
-    /* Check for deadlock */
+    /* Check for deadlock with target thread */
     if (curr_thread->join_thread == thread) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EDEADLK);
     }
 
     /* Acquire the member lock */
@@ -156,9 +159,10 @@ ThreadReturn thread_join(
     /* Check if any other thread is already waiting */
     if (thread->join_thread) {
 
-        /* Release member lock and return */
+        /* Release the member lock */
         lock_release(&thread->mem_lock);
-        return THREAD_FAIL;
+
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* Set the current thread as the join thread */
@@ -200,7 +204,7 @@ ThreadReturn thread_join(
     /* Free the thread control block */
     free(thread);
 
-    return THREAD_OK;
+    return THREAD_SUCCESS;
 }
 
 /**

@@ -2,6 +2,7 @@
 
 #include "./mods/utils.h"
 #include "./thread_sig.h"
+#include "./thread_errno.h"
 
 /**
  * @brief Update the signal mask of the current thread
@@ -9,17 +10,19 @@
  * @param[in] set Pointer to the signal set to be worked upon
  * @param[out] oldset Pointer to the signal set which will store the old signal
  *                    mask. Will store the previously blocked signal set
+ * @return 0 if success
+ * @return -1 if failure, sets the errno
  */
-ThreadReturn thread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
+int thread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
 
     /* Check for errors */
     if (!set) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
     if (!oldset) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* Set the signal mask */
@@ -28,31 +31,32 @@ ThreadReturn thread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
         return THREAD_FAIL;
     }
 
-    return THREAD_OK;
+    return THREAD_SUCCESS;
 }
 
 /**
  * @brief Delivers the specified signal to the target thread
  * @param[in] thread Thread handle for the target thread
  * @param[in] sig_num Signal number
- * @return Thread return status
+ * @return 0 if success
+ * @return -1 if failure, sets the errno
  */
-ThreadReturn thread_kill(Thread thread, int sig_num) {
+int thread_kill(Thread thread, int sig_num) {
 
     int tgid;
 
     /* Check for errors */
     if (!thread) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
     if (thread->thread_state == THREAD_STATE_EXITED) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
     if (thread->thread_state == THREAD_STATE_JOINED) {
 
-        return THREAD_FAIL;
+        THREAD_RET_FAIL(EINVAL);
     }
 
     /* Get the thread group id */
@@ -64,5 +68,5 @@ ThreadReturn thread_kill(Thread thread, int sig_num) {
         return THREAD_FAIL;
     }
 
-    return THREAD_OK;
+    return THREAD_SUCCESS;
 }
