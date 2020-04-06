@@ -34,10 +34,10 @@ typedef ThreadLock ThreadMutex;
 typedef ThreadLock ThreadSpinLock;
 
 /* Mutex initializer macro */
-#define THREAD_MUTEX_INITIALIZER (ThreadMutex)THREAD_LOCK_INITIALIZER
+#define THREAD_MUTEX_INITIALIZER THREAD_LOCK_INITIALIZER
 
 /* Spinlock initializer macro */
-#define THREAD_SPINLOCK_INITIALIZER (ThreadSpinLock)THREAD_LOCK_INITIALIZER
+#define THREAD_SPINLOCK_INITIALIZER THREAD_LOCK_INITIALIZER
 
 /**
  * Condition variable definition
