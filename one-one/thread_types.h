@@ -81,7 +81,7 @@ typedef struct _ThreadControlBlock {
     struct _ThreadControlBlock *join_thread;
 
     /* Local error number */
-    int errno;
+    int error;
 
     /* Thread member lock */
     Lock mem_lock;

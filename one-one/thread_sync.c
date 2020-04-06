@@ -41,7 +41,6 @@ int thread_mutex_init(ThreadMutex *mutex) {
 int thread_mutex_lock(ThreadMutex *mutex) {
 
     Thread thread;
-    int ret_val;
 
     /* Check for errors */
     if (!mutex) {
@@ -76,13 +75,7 @@ int thread_mutex_lock(ThreadMutex *mutex) {
         thread->thread_state = THREAD_STATE_WAIT_MUTEX;
 
         /* Wait till the lock is not released by the current owner */
-        ret_val = futex(&mutex->lock_word, FUTEX_WAIT, THREAD_LOCK_ACQUIRED);
-
-        /* Check for errors */
-        if ((ret_val == -1) && (errno != EAGAIN)) {
-
-            return THREAD_FAIL;
-        }
+        futex(&mutex->lock_word, FUTEX_WAIT, THREAD_LOCK_ACQUIRED);
 
         /* Update the thread state */
         thread->thread_state = THREAD_STATE_RUNNING;
@@ -100,7 +93,6 @@ int thread_mutex_lock(ThreadMutex *mutex) {
 int thread_mutex_unlock(ThreadMutex *mutex) {
 
     Thread thread;
-    int ret_val;
 
     /* Check for errors */
     if (!mutex) {
@@ -127,13 +119,7 @@ int thread_mutex_unlock(ThreadMutex *mutex) {
                    THREAD_LOCK_NOT_ACQUIRED)) {
 
         /* Wake up the waiting process */
-        ret_val = futex(&mutex->lock_word, FUTEX_WAKE, NB_WAKEUP_PROCESSES);
-
-        /* Check for errors */
-        if ((ret_val == -1) && (errno != EAGAIN)) {
-
-            return THREAD_FAIL;
-        }
+        futex(&mutex->lock_word, FUTEX_WAKE, NB_WAKEUP_PROCESSES);
     }
 
     return THREAD_SUCCESS;
@@ -356,8 +342,6 @@ int thread_cond_wait(ThreadCond *cond, ThreadMutex *mutex) {
  */
 int thread_cond_signal(ThreadCond *cond) {
 
-    int ret_val;
-
     /* Check for errors */
     if (!cond) {
 
@@ -371,10 +355,7 @@ int thread_cond_signal(ThreadCond *cond) {
     }
 
     /* Wake up only one thread */
-    ret_val = futex(&cond->zero, FUTEX_WAKE, 1);
-
-    /* Check for errors */
-    if ((ret_val == -1) && (errno != EAGAIN)) {
+    if (futex(&cond->zero, FUTEX_WAKE, 1) == -1) {
 
         return THREAD_FAIL;
     }

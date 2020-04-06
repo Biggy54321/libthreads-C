@@ -41,19 +41,22 @@ void main() {
 
     signal(SIGUSR1, handler);
 
-    /* thread_kill(me, SIGUSR1); */
+    if (thread_create(&td1, func1, NULL)) {
+        printf("%d\n", th_errno);
+    }
 
-    /* thread_create(&td1, func1, NULL); */
-    thread_create(&td2, func2, NULL);
+    if (thread_create(&td2, func2, NULL)) {
+        print("Error\n");
+    }
 
-    /* thread_kill(td1, SIGUSR1); */
+    thread_kill(td1, SIGUSR1);
 
-    /* thread_join(td1, &ret1); */
+    thread_join(td1, &ret1);
     thread_join(td2, &ret2);
 
     print("In main\n");
 
-    /* printf("%d\n", (int)ret1); */
+    printf("%d\n", (int)ret1);
     printf("%d\n", (int)ret2);
 
     thread_exit((void *)12);

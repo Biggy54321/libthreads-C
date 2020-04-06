@@ -5,17 +5,21 @@
 
 #include "./thread_cntl.h"
 
-/* Remove the original definition of the error number */
-#undef errno
-
-/* Redefine the error number macro */
-#define errno (thread_self()->errno)
-
 /* Return values of most of the thread library functions */
 #define THREAD_SUCCESS  ((int)0)
 #define THREAD_FAIL     ((int)-1)
 
+/* Define the thread specific errno macro */
+#define th_errno (thread_self()->error)
+
 /* Macro to set the errno and return failure */
-#define THREAD_RET_FAIL(err) {errno = (err), return THREAD_FAIL;}
+#define THREAD_RET_FAIL(err)                    \
+    {                                           \
+        /* Set the argument error number */     \
+        th_errno = (err);                       \
+                                                \
+        /* Return fail */                       \
+        return THREAD_FAIL;                     \
+    }
 
 #endif

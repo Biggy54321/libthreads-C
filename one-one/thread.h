@@ -3,6 +3,8 @@
 
 #include "./thread_types.h"
 
+#include "./thread_errno.h"
+
 #include "./thread_cntl.h"
 
 #include "./thread_sync.h"

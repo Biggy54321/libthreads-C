@@ -1,0 +1,170 @@
+
+thread_sig.c,151
+int thread_sigmask(int how, sigset_t *set, sigset_t *oldset) {thread_sigmask16,486
+int thread_kill(Thread thread, int sig_num) {thread_kill44,1063
+
+mods/list.h,518
+#define _LIST_H__LIST_H_2,17
+typedef struct ListMember {ListMember12,225
+    struct ListMember *next;next15,280
+    struct ListMember *prev;prev18,337
+} ListMember;ListMember19,366
+typedef struct List {List24,421
+    ListMember *head;head27,487
+    ListMember *tail;tail30,552
+} List;List31,574
+#define list_enqueue(list_enqueue50,1098
+#define list_dequeue(list_dequeue66,1777
+#define LIST_INITIALIZER LIST_INITIALIZER77,2336
+static inline int list_is_empty(List *list) {list_is_empty89,2625
+
+mods/lock.h,205
+#define _LOCK_H__LOCK_H_2,17
+typedef int Lock;Lock7,58
+#define LOCK_ACQUIRED LOCK_ACQUIRED12,100
+#define LOCK_NOT_ACQUIRED LOCK_NOT_ACQUIRED13,131
+#define LOCK_INITIALIZER LOCK_INITIALIZER18,191
+
+mods/stack.c,407
+#define _PAGE_SIZE _PAGE_SIZE9,129
+#define _STACK_PROT_FLAGS _STACK_PROT_FLAGS11,206
+#define _STACK_MAP_FLAGS _STACK_MAP_FLAGS13,285
+#define _STACK_GUARD_PROT_FLAGS _STACK_GUARD_PROT_FLAGS15,383
+static long _stack_limit(void) {_stack_limit25,605
+int stack_alloc(void **stack_base, long *stack_limit) {stack_alloc53,1292
+int stack_free(void **stack_base, long *stack_limit) {stack_free109,2408
+
+mods/utils.h,515
+#define _UTILS_H__UTILS_H_2,18
+#define _GNU_SOURCE_GNU_SOURCE4,37
+#define KERNEL_THREAD_ID KERNEL_THREAD_ID18,339
+static inline int atomic_cas(int *addr, int old_val, int new_val) {atomic_cas28,694
+static inline int futex(int *uaddr, int futex_op, int val) {futex41,1092
+static inline int tgkill(int tgid, int tid, int sig) {tgkill54,1450
+static inline void set_fs(void *addr) {set_fs64,1660
+static inline void *get_fs(void) {get_fs74,1875
+static inline void sys_exit(int status) {sys_exit88,2124
+
+mods/lock.c,102
+int lock_acquire(Lock *lock) {lock_acquire14,266
+int lock_release(Lock *lock) {lock_release35,656
+
+mods/stack.h,33
+#define _STACK_H__STACK_H_2,18
+
+mods/list.c,140
+void do_list_enqueue(List *list, ListMember *new) {do_list_enqueue11,223
+ListMember *do_list_dequeue(List *list) {do_list_dequeue42,868
+
+thread.h,35
+#define _THREAD_H__THREAD_H_2,19
+
+thread_sig.h,43
+#define _THREAD_SIG_H__THREAD_SIG_H_2,23
+
+thread_cntl.c,466
+#define _GNU_SOURCE_GNU_SOURCE1,0
+#define CLONE_FLAGS CLONE_FLAGS12,229
+static Thread _main_thread;_main_thread19,525
+int _thread_start(ptr_t arg) {_thread_start27,696
+int thread_create(thread_create51,1267
+int thread_join(thread_join120,3025
+Thread thread_self(void) {thread_self214,5166
+void thread_exit(ptr_t return_value) {thread_exit232,5569
+int thread_yield(void) {thread_yield253,6032
+void thread_main_init(void) {thread_main_init263,6228
+
+README.md,446
+# One to one user threading modelOne to one user threading model1,0
+## Thread createThread create7,219
+## Thread joinThread join49,2628
+## Thread exitThread exit76,4023
+## Thread selfThread self89,4615
+## Thread spinlockThread spinlock102,5238
+## Thread killThread kill133,6699
+## MiscellaneousMiscellaneous142,7016
+### Stack SmashingStack Smashing144,7034
+### Structure paddingStructure padding158,7901
+## BugsBugs164,8217
+
+thread_types.h,1381
+#define _THREAD_TYPES_H__THREAD_TYPES_H_2,25
+typedef void *ptr_t;ptr_t11,128
+typedef void *(*thread_start_t)(void *);thread_start_t16,185
+typedef enum _ThreadState {_ThreadState21,251
+    THREAD_STATE_RUNNING,THREAD_STATE_RUNNING24,308
+    THREAD_STATE_EXITED,THREAD_STATE_EXITED27,363
+    THREAD_STATE_JOINED,THREAD_STATE_JOINED30,416
+    THREAD_STATE_WAIT_JOIN,THREAD_STATE_WAIT_JOIN33,494
+    THREAD_STATE_WAIT_SPINLOCK,THREAD_STATE_WAIT_SPINLOCK36,575
+    THREAD_STATE_WAIT_MUTEX,THREAD_STATE_WAIT_MUTEX39,657
+    THREAD_STATE_WAIT_CONDTHREAD_STATE_WAIT_COND42,739
+} ThreadState;ThreadState44,767
+typedef struct _ThreadControlBlock {_ThreadControlBlock51,931
+    ptr_t stack_base;stack_base54,998
+    uint64_t stack_limit;stack_limit57,1042
+    thread_start_t start_routine;start_routine60,1100
+    ptr_t argument;argument63,1161
+    ptr_t return_value;return_value66,1212
+    uint64_t __pad;__pad69,1272
+    uint32_t thread_id;thread_id72,1321
+    uint32_t join_word;join_word75,1366
+    ThreadState thread_state;thread_state78,1421
+    struct _ThreadControlBlock *join_thread;join_thread81,1528
+    int errno;errno84,1603
+    Lock mem_lock;mem_lock87,1648
+} ThreadControlBlock;ThreadControlBlock89,1668
+#define THREAD_CONTROL_BLOCK_SIZE THREAD_CONTROL_BLOCK_SIZE94,1731
+typedef ThreadControlBlock *Thread;Thread99,1838
+
+build.sh,0
+
+thread_sync.c,799
+#define NB_WAKEUP_PROCESSES NB_WAKEUP_PROCESSES9,178
+int thread_mutex_init(ThreadMutex *mutex) {thread_mutex_init17,365
+int thread_mutex_lock(ThreadMutex *mutex) {thread_mutex_lock41,922
+int thread_mutex_unlock(ThreadMutex *mutex) {thread_mutex_unlock100,2303
+int thread_spin_init(ThreadSpinLock *spinlock) {thread_spin_init148,3368
+int thread_spin_lock(ThreadSpinLock *spinlock) {thread_spin_lock172,3948
+int thread_spin_unlock(ThreadSpinLock *spinlock) {thread_spin_unlock214,4947
+int thread_cond_init(ThreadCond *cond) {thread_cond_init250,5727
+int thread_cond_wait(ThreadCond *cond, ThreadMutex *mutex) {thread_cond_wait277,6320
+int thread_cond_signal(ThreadCond *cond) {thread_cond_signal357,8129
+int thread_cond_broadcast(ThreadCond *cond) {thread_cond_broadcast392,8876
+
+thread_sync.h,903
+#define _THREAD_SYNC_H__THREAD_SYNC_H_2,24
+typedef struct _ThreadLock {_ThreadLock9,112
+    Thread owner_thread;owner_thread12,170
+    uint32_t lock_word;lock_word15,248
+} ThreadLock;ThreadLock17,273
+#define THREAD_LOCK_ACQUIRED THREAD_LOCK_ACQUIRED20,306
+#define THREAD_LOCK_NOT_ACQUIRED THREAD_LOCK_NOT_ACQUIRED21,344
+#define THREAD_LOCK_INITIALIZER THREAD_LOCK_INITIALIZER24,412
+typedef ThreadLock ThreadMutex;ThreadMutex29,518
+typedef ThreadLock ThreadSpinLock;ThreadSpinLock34,589
+#define THREAD_MUTEX_INITIALIZER THREAD_MUTEX_INITIALIZER37,655
+#define THREAD_SPINLOCK_INITIALIZER THREAD_SPINLOCK_INITIALIZER40,759
+typedef struct _ThreadCond {_ThreadCond45,877
+    int nb_threads;nb_threads48,944
+    ThreadMutex *mutex;mutex51,1008
+    int zero;zero54,1053
+} ThreadCond;ThreadCond56,1068
+#define THREAD_CONDITION_INITIALIZER THREAD_CONDITION_INITIALIZER59,1120
+
+thread_errno.h,209
+#define _THREAD_ERRNO_H__THREAD_ERRNO_H_2,25
+#define errno errno12,208
+#define THREAD_SUCCESS THREAD_SUCCESS15,306
+#define THREAD_FAIL THREAD_FAIL16,339
+#define THREAD_RET_FAIL(THREAD_RET_FAIL19,422
+
+thread_cntl.h,43
+#define _THREAD_CNTL_H_THREAD_CNTL_H2,23
+
+test.c,169
+#define print(print12,172
+void handler(int sig) {handler14,231
+void *func1(void *arg) {func121,325
+void *func2(void *arg) {func230,421
+void main() {main37,508
