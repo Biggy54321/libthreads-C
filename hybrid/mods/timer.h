@@ -17,12 +17,13 @@ typedef struct Timer {
 
     /* Signal event structure */
     struct sigevent event;
+
 } Timer;
 
-void timer_set(Timer *timer, struct sigaction action, long millisecs);
+int timer_set(Timer *timer, struct sigaction action, long millisecs);
 
-void timer_start(Timer *timer);
+int timer_start(Timer *timer);
 
-void timer_stop(Timer *timer);
+int timer_stop(Timer *timer);
 
 #endif

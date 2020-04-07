@@ -20,11 +20,16 @@
  * @param[out] timer Pointer to the timer instance
  * @param[in] action Signal action after the timeout
  * @param[in] millisecs Timer out expiration period in milliseconds
+ * @return 0 if success
+ * @return -1 if failure
  */
-void timer_set(Timer *timer, struct sigaction action, long millisecs) {
+int timer_set(Timer *timer, struct sigaction action, long millisecs) {
 
     /* Check for errors */
-    assert(timer);
+    if (!timer) {
+
+        return -1;
+    }
 
     /* Initialize the interval of timeout */
     timer->interval.it_interval.tv_nsec = 0;
@@ -40,7 +45,12 @@ void timer_set(Timer *timer, struct sigaction action, long millisecs) {
     timer->event._sigev_un._tid = KERNEL_THREAD_ID;
 
     /* Set the required action for the given timeout */
-    sigaction(SIGALRM, &action, NULL);
+    if (sigaction(SIGALRM, &action, NULL) == -1) {
+
+        return -1;
+    }
+
+    return 0;
 }
 
 /**
@@ -50,17 +60,30 @@ void timer_set(Timer *timer, struct sigaction action, long millisecs) {
  * to previously set event
  *
  * @param[in] timer Pointer to the timer instance
+ * @return 0 if success
+ * @return -1 if failure
  */
-void timer_start(Timer *timer) {
+int timer_start(Timer *timer) {
 
     /* Check for errors */
-    assert(timer);
+    if (!timer) {
+
+        return -1;
+    }
 
     /* Allocate the timer */
-    timer_create(CLOCK_REALTIME, &timer->event, &timer->timerid);
+    if (timer_create(CLOCK_REALTIME, &timer->event, &timer->timerid) == -1) {
+
+        return -1;
+    }
 
     /* Set the timer */
-    timer_settime(timer->timerid, 0, &timer->interval, NULL);
+    if (timer_settime(timer->timerid, 0, &timer->interval, NULL) == -1) {
+
+        return -1;
+    }
+
+    return 0;
 }
 
 /**
@@ -70,12 +93,22 @@ void timer_start(Timer *timer) {
  * allocated using timer_start() first
  *
  * @param[in] timer Pointer to the timer instance
+ * @return 0 if success
+ * @return -1 if failure
  */
-void timer_stop(Timer *timer) {
+int timer_stop(Timer *timer) {
 
     /* Check for errors */
-    assert(timer);
+    if (!timer) {
+
+        return -1;
+    }
 
     /* Deallocate the timer */
-    timer_delete(timer->timerid);
+    if (timer_delete(timer->timerid) == -1) {
+
+        return -1;
+    }
+
+    return 0;
 }

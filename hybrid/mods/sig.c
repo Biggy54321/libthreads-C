@@ -10,32 +10,54 @@
  * @brief Block all the signals
  *
  * Sets a mask so as to block all the signals
+ *
+ * @return 0 if success
+ * @return -1 if failure
  */
-void sig_block_all(void) {
+int sig_block_all(void) {
 
     sigset_t mask;
 
     /* Set all the signals in the mask */
-    sigfillset(&mask);
+    if (sigfillset(&mask) == -1) {
+
+        return -1;
+    }
 
     /* Set the mask */
-    sigprocmask(SIG_BLOCK, &mask, NULL);
+    if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1) {
+
+        return -1;
+    }
+
+    return 0;
 }
 
 /**
  * @brief Unblock all the signals
  *
  * Sets a mask so as to unblock all the signals
+ *
+ * @return 0 if success
+ * @return -1 if failure
  */
-void sig_unblock_all(void) {
+int sig_unblock_all(void) {
 
     sigset_t mask;
 
     /* Set all the signals in the mask */
-    sigfillset(&mask);
+    if (sigfillset(&mask) == -1) {
+
+        return -1;
+    }
 
     /* Set the mask */
-    sigprocmask(SIG_UNBLOCK, &mask, NULL);
+    if (sigprocmask(SIG_UNBLOCK, &mask, NULL) == -1) {
+
+        return -1;
+    }
+
+    return 0;
 }
 
 /**
@@ -47,11 +69,18 @@ void sig_unblock_all(void) {
  *
  * @param[in] tid Thread id
  * @param[in] sig Signal number
+ * @return 0 if success
+ * @return -1 if failure
  */
-void sig_send(int tid, int sig) {
+int sig_send(int tid, int sig) {
 
     /* Send the signal using kill system call */
-    tgkill(getpid(), tid, sig);
+    if (tgkill(getpid(), tid, sig) == -1) {
+
+        return -1;
+    }
+
+    return 0;
 }
 
 
@@ -63,16 +92,23 @@ void sig_send(int tid, int sig) {
  *
  * @return 0 if no signal is pending
  * @return 1 if atleast one signal is pending
+ * @return -1 if failure
  */
 int sig_is_pending(void) {
 
     sigset_t mask;
 
     /* Initialize the mask to all zeros */
-    sigemptyset(&mask);
+    if (sigemptyset(&mask) == -1) {
+
+        return -1;
+    }
 
     /* Get the pending signal set */
-    sigpending(&mask);
+    if (sigpending(&mask) == -1) {
+
+        return -1;
+    }
 
     return !(sigisemptyset(&mask));
 }

@@ -12,7 +12,7 @@
  *
  * @param[in] spinlock Pointer to the spinlock instance
  */
-void hthread_spinlock_lock(HThreadMutex *spinlock) {
+void hthread_spinlock_lock(HThreadSpinLock *spinlock) {
 
     HThread hthread;
 
@@ -42,7 +42,7 @@ void hthread_spinlock_lock(HThreadMutex *spinlock) {
  *
  * @param[in] spinlock Pointer to the spinlock instance
  */
-void hthread_spin_unlock(HThreadMutex *spinlock) {
+void hthread_spin_unlock(HThreadSpinLock *spinlock) {
 
     HThread hthread;
 

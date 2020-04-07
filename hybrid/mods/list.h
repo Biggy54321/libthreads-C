@@ -2,7 +2,6 @@
 #define _LIST_H_
 
 #include <stddef.h>
-#include <assert.h>
 
 /**
  * Doubly linked list member to chain different structures
@@ -16,6 +15,7 @@ typedef struct ListMember {
 
     /* Backward pointer */
     struct ListMember *prev;
+
 } ListMember;
 
 /**
@@ -42,18 +42,28 @@ ListMember *do_list_dequeue(List *list);
 
 /**
  * @brief Enqueue a new node to the list
- *
  * @param[in] list Pointer to the list instance
  * @param[in] new Pointer to the any structure to be added
  * @param[in] mem Name of the ListMember member in the structure type of #new
+ * @return 0 if success
+ * @return -1 if failure
  */
 #define list_enqueue(list, new, mem)                \
-    {                                               \
-        assert((list));                             \
-        assert((new));                              \
+    ({                                              \
+        /* If the parameters are OK */              \
+        if ((list) && (new)) {                      \
                                                     \
-        do_list_enqueue((list), &(new)->mem);       \
-    }                                               \
+            /* Enqueue the argument in the list */  \
+            do_list_enqueue((list), &(new)->mem);   \
+                                                    \
+            /* Return success */                    \
+            (0);                                    \
+        } else {                                    \
+                                                    \
+            /* Return failure */                    \
+            (-1);                                   \
+        }                                           \
+    })
 
 /**
  * @brief Dequeue a node from the list
@@ -61,20 +71,47 @@ ListMember *do_list_dequeue(List *list);
  * @param[in] list Pointer to the list instance
  * @param[in] type Type of the structure to be returned
  * @param[in] mem Name of the ListMember member in the structure of given type
- * @return Pointer to the structure containing the head ListMember
+ * @return Pointer to the structure containing the head ListMember if success
+ * @return NULL if failure
  */
-#define list_dequeue(list, type, mem)                           \
-    ({                                                          \
-        assert((list));                                         \
-        assert((list)->head);                                   \
-                                                                \
-        int _offset = offsetof(type, mem);                      \
-                                                                \
-        (type *)((void *)do_list_dequeue((list)) - _offset);    \
+#define list_dequeue(list, type, mem)                               \
+    ({                                                              \
+        /* Check the arguments */                                   \
+        if ((list) && ((list)->head)) {                             \
+                                                                    \
+            /* Get the offset of the member */                      \
+            int _offset = offsetof(type, mem);                      \
+                                                                    \
+            /* Get the dequeued structure */                        \
+            (type *)((void *)do_list_dequeue((list)) - _offset);    \
+        } else {                                                    \
+                                                                    \
+            (NULL);                                                 \
+        }                                                           \
     })
 
 /* List initializer */
 #define LIST_INITIALIZER (List){NULL, NULL}
+
+/**
+ * @brief Initialize the list
+ * @param[in] list Pointer to the list instance
+ * @return 0 if success
+ * @return -1 if failure
+ */
+static inline int list_init(List *list) {
+
+    /* Check for errors */
+    if (!list) {
+
+        return -1;
+    }
+
+    /* Set the base value for the list */
+    *list = LIST_INITIALIZER;
+
+    return 0;
+}
 
 /**
  * @brief Is list empty
@@ -85,11 +122,15 @@ ListMember *do_list_dequeue(List *list);
  * @param[in] list Pointer to the list instance
  * @return 0 if not empty
  * @return 1 if empty
+ * @return -1 if failure
  */
 static inline int list_is_empty(List *list) {
 
     /* Check for errors */
-    assert(list);
+    if (!list) {
+
+        return -1;
+    }
 
     /* Check if both the pointers are NULL */
     return (!list->head && !list->tail);

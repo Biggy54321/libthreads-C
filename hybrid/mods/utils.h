@@ -28,9 +28,6 @@ pid_t gettid(void);
  */
 static inline int atomic_cas(int *addr, int old_val, int new_val) {
 
-    /* Check for errors */
-    assert(addr);
-
     /* Use the atomic function to compare and exchange */
     return atomic_compare_exchange_strong(addr, &old_val, new_val);
 }
@@ -43,9 +40,6 @@ static inline int atomic_cas(int *addr, int old_val, int new_val) {
  * @return 0 or errno
  */
 static inline int futex(int *uaddr, int futex_op, int val) {
-
-    /* Check for errors */
-    assert(uaddr);
 
     /* Use the system call wrapper around the futex system call */
     return syscall(SYS_futex, uaddr, futex_op, val, NULL, NULL, 0);
@@ -76,21 +70,9 @@ static inline void *get_fs(void) {
 }
 
 /**
- * @brief Mallocs and asserts the requested type variable
+ * @brief Macro to allocate a single structure of given type
+ * @param[in] type Type of the structure
  */
-#define alloc_mem(type)                         \
-    ({                                          \
-        /* Get the pointer of the given type */ \
-        type *_ptr;                             \
-                                                \
-        /* Allocate memory */                   \
-        _ptr = (type *)malloc(sizeof(type));    \
-                                                \
-        /* Check for errors */                  \
-        assert(_ptr);                           \
-                                                \
-        /* Return the pointer */                \
-        _ptr;                                   \
-    })
+#define alloc(type) ((type *)malloc(sizeof(type)))
 
 #endif

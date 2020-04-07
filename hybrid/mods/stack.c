@@ -27,10 +27,13 @@ static long _stack_limit(void) {
     struct rlimit stack_limit;
 
     /* Get the stack resource limit */
-    getrlimit(RLIMIT_STACK, &stack_limit);
+    if (!getrlimit(RLIMIT_STACK, &stack_limit)) {
 
-    /* Return the current limit */
-    return stack_limit.rlim_cur;
+        return stack_limit.rlim_cur;
+    } else {
+
+        return -1;
+    }
 }
 
 /**
@@ -41,14 +44,25 @@ static long _stack_limit(void) {
  * at the end of the stack
  *
  * @param[out] stack Pointer to the stack instance to be initialized
+ * @return 0 if success
+ * @return -1 if failure
  */
-void stack_alloc(stack_t *stack) {
+int stack_alloc(stack_t *stack) {
 
     /* Check for errors */
-    assert(stack);
+    if (!stack) {
+
+        return -1;
+    }
 
     /* Get the stack limit */
     stack->ss_size = _stack_limit();
+
+    /* Check for errors */
+    if (stack->ss_size == -1) {
+
+        return -1;
+    }
 
     /* Memory map the stack */
     stack->ss_sp = mmap(NULL,
@@ -56,17 +70,26 @@ void stack_alloc(stack_t *stack) {
                         _STACK_PROT_FLAGS,
                         _STACK_MAP_FLAGS,
                         -1, 0);
+
     /* Check for errors */
-    assert(stack->ss_sp != MAP_FAILED);
+    if (stack->ss_sp == MAP_FAILED) {
+
+        return -1;
+    }
 
     /* Set the stack guard */
-    mprotect(stack->ss_sp, _PAGE_SIZE, _STACK_GUARD_PROT_FLAGS);
+    if (mprotect(stack->ss_sp, _PAGE_SIZE, _STACK_GUARD_PROT_FLAGS) == -1) {
+
+        return -1;
+    }
 
     /* Update the new base of the stack */
     stack->ss_sp += _PAGE_SIZE;
 
     /* Set no flags */
     stack->ss_flags = 0;
+
+    return 0;
 }
 
 /**
@@ -75,12 +98,22 @@ void stack_alloc(stack_t *stack) {
  * Deallocates the stack previously allocated
  *
  * @param[out] stack Pointer to the stack instance to be deinitialized
+ * @return 0 if success
+ * @return -1 if failure
  */
-void stack_free(stack_t *stack) {
+int stack_free(stack_t *stack) {
 
     /* Check for errors */
-    assert(stack);
+    if (!stack) {
+
+        return -1;
+    }
 
     /* Unmap the previously mapped stack region */
-    munmap(stack->ss_sp - _PAGE_SIZE, stack->ss_size + _PAGE_SIZE);
+    if (munmap(stack->ss_sp - _PAGE_SIZE, stack->ss_size + _PAGE_SIZE) == -1) {
+
+        return -1;
+    }
+
+    return 0;
 }

@@ -10,14 +10,21 @@
  * waits till he lock is not acquired
  *
  * @param[in] lock Pointer to the lock variable
+ * @return 0 if success
+ * @return -1 if failure
  */
-void lock_acquire(Lock *lock) {
+int lock_acquire(Lock *lock) {
 
     /* Check for errors */
-    assert(lock);
+    if (!lock) {
+
+        return -1;
+    }
 
     /* While the lock's status is not updated */
     while (!atomic_cas(lock, LOCK_NOT_ACQUIRED, LOCK_ACQUIRED));
+
+    return 0;
 }
 
 /**
@@ -26,12 +33,19 @@ void lock_acquire(Lock *lock) {
  * Atomically check if the lock is acquired and then releases it
  *
  * @param[in] lock Pointer to the lock variable
+ * @return 0 if success
+ * @return -1 if failure
  */
-void lock_release(Lock *lock) {
+int lock_release(Lock *lock) {
 
     /* Check for errors */
-    assert(lock);
+    if (!lock) {
+
+        return -1;
+    }
 
     /* If the lock is updated with the release value */
     atomic_cas(lock, LOCK_ACQUIRED, LOCK_NOT_ACQUIRED);
+
+    return 0;
 }
