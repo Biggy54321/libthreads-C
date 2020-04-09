@@ -1,5 +1,5 @@
-#ifndef _MM_SCHED_H_
-#define _MM_SCHED_H_
+#ifndef _MMSCHED_H_
+#define _MMSCHED_H_
 
 #include <signal.h>
 
@@ -11,7 +11,7 @@
 typedef struct Scheduler {
 
     /* Kernel thread id */
-    int tid;
+    int ktid;
 
     /* Wait word */
     int wait;
@@ -20,14 +20,15 @@ typedef struct Scheduler {
     stack_t stack;
 
     /* List member */
-    ListMember sched_mem;
+    ListMember sll_mem;
 
 } Scheduler;
 
-#define MM_SCHED_TIME_SLICE (10u)
+/* Many-many thread time slice (in milli seconds) */
+#define MMSCHED_TIME_SLICE_ms (10u)
 
-void mm_sched_init(int nb_scheds);
+void mmsched_init(int nb_scheds);
 
-void mm_sched_deinit(void);
+void mmsched_deinit(void);
 
 #endif

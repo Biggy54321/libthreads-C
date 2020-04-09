@@ -1,108 +1,51 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <stdlib.h>
+#include <signal.h>
+#include "./thread.h"
 
-#include "./hthread.h"
+#define print(str) (write(1, str, strlen(str)))
 
-#define print(str) write(1, str, strlen(str))
+void *thread2(void *arg) {
 
-void handler1(int sig) {
+    print("Hello, world2\n");
 
-    print("Inside the handler1\n");
-
-    while (1) {
-        ;
-    }
+    thread_exit(NULL);
 }
 
-void handler2(int sig) {
+void *thread1(void *arg) {
 
-    print("Inside the handler2\n");
+    Thread t2;
 
-    hthread_exit((void *)1024);
+    print("Hello, world1\n");
+
+    thread_create(&t2, thread2, NULL, THREAD_TYPE_ONE_ONE);
+
+    thread_join(t2, NULL);
+
+    thread_exit(NULL);
 }
 
+void handler(int sig) {
 
-void *func2(void *arg) {
+    print("Inside the handler\n");
 
-
-
-    print("Inside func2\n");
-
-
-
-    hthread_exit((void *)256);
-}
-
-void *func1(void *arg) {
-
-    HThread t2;
-
-    print("Inside func1\n");
-
-    t2 = hthread_create(func2, NULL, HTHREAD_TYPE_MANY_MANY);
-
-    hthread_join(t2, NULL);
-
-    hthread_exit((void *)128);
-}
-
-
-void *func3(void *arg) {
-
-    print("Inside func3\n");
-
-    hthread_exit((void *)512);
-}
-
-HThread func_test(HThread t1) {
-
-    HThread t2;
-
-    t2 = hthread_create(func2, NULL, HTHREAD_TYPE_MANY_MANY);
-
-    hthread_join(t1, NULL);
-
-    return t2;
+    thread_exit(NULL);
 }
 
 void main() {
 
-    HThread t1, t2, t3;
-    void *r1, *r2, *r3;
+    Thread t1;
 
-    signal(SIGUSR1, handler1);
-    signal(SIGUSR2, handler2);
+    signal(SIGUSR1, handler);
 
-    hthread_init(1);
+    thread_init(1);
 
-    t1 = hthread_create(func1, NULL, HTHREAD_TYPE_MANY_MANY);
-    /* t1 = hthread_create(func2, NULL, HTHREAD_TYPE_MANY_MANY); */
-    /* /\* t3 = hthread_create(func3, NULL, HTHREAD_TYPE_MANY_MANY); *\/ */
+    thread_create(&t1, thread1, NULL, THREAD_TYPE_ONE_ONE);
 
-    /* t2 = func_test(t1); */
+    thread_kill(t1, SIGUSR1);
 
-    hthread_join(t1, NULL);
-    /* hthread_kill(t2, SIGUSR1); */
+    thread_join(t1, NULL);
 
-    /* for (int i = 0; i < 1000000; i++) { */
-
-    /*     i = i - 1; */
-    /*     i = i + 1; */
-    /*     i = i - 1; */
-    /*     i = i + 1; */
-    /* } */
-
-    /* hthread_kill(t2, SIGUSR2); */
-
-    /* /\* hthread_join(t1, &r1); *\/ */
-    /* hthread_join(t2, &r2); */
-    /* /\* hthread_join(t3, &r3); *\/ */
-
-    /* /\* printf("%d\n", r1); *\/ */
-    /* printf("%d\n", r2); */
-    /* /\* printf("%d\n", r3); *\/ */
-
-    hthread_deinit();
+    thread_deinit();
 }

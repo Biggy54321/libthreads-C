@@ -20,10 +20,10 @@ typedef struct Timer {
 
 } Timer;
 
-int timer_set(Timer *timer, struct sigaction action, long millisecs);
+void timer_set(Timer *timer, struct sigaction action, long millisecs);
 
-int timer_start(Timer *timer);
+void timer_start(Timer *timer);
 
-int timer_stop(Timer *timer);
+void timer_stop(Timer *timer);
 
 #endif

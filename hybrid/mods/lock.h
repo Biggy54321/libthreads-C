@@ -17,8 +17,10 @@ typedef int Lock;
  */
 #define LOCK_INITIALIZER  (LOCK_NOT_ACQUIRED)
 
-int lock_acquire(Lock *lock);
+void lock_init(Lock *lock);
 
-int lock_release(Lock *lock);
+void lock_acquire(Lock *lock);
+
+void lock_release(Lock *lock);
 
 #endif
