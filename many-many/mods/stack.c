@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/time.h>
@@ -15,7 +16,10 @@
 #define _STACK_GUARD_PROT_FLAGS (PROT_NONE)
 
 /**
- * @brief Returns the stack limit of a thread in bytes
+ * @brief Get stack limit
+ *
+ * Returns the maximum stack size that can be allocated for a thread in bytes
+ *
  * @return Size in bytes
  */
 static long _stack_limit(void) {
@@ -25,12 +29,17 @@ static long _stack_limit(void) {
     /* Get the stack resource limit */
     getrlimit(RLIMIT_STACK, &stack_limit);
 
-    /* Return the current limit */
+    /* Return the stack limit */
     return stack_limit.rlim_cur;
 }
 
 /**
- * @brief Allocates the stack
+ * @brief Allocates stack
+ *
+ * Memory maps a region in virtual address space to be used a stack. Prevents
+ * uncontrolled growth of the stack by allocating stack guard equal to page size
+ * at the end of the stack
+ *
  * @param[out] stack Pointer to the stack instance to be initialized
  */
 void stack_alloc(stack_t *stack) {
@@ -47,6 +56,7 @@ void stack_alloc(stack_t *stack) {
                         _STACK_PROT_FLAGS,
                         _STACK_MAP_FLAGS,
                         -1, 0);
+
     /* Check for errors */
     assert(stack->ss_sp != MAP_FAILED);
 
@@ -62,6 +72,9 @@ void stack_alloc(stack_t *stack) {
 
 /**
  * @brief Dellocates the stack
+ *
+ * Deallocates the stack previously allocated
+ *
  * @param[out] stack Pointer to the stack instance to be deinitialized
  */
 void stack_free(stack_t *stack) {

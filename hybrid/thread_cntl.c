@@ -128,6 +128,9 @@ void thread_create(Thread *thread, thread_start_t start, ptr_t arg,
     (*thread) = alloc_mem(struct Thread);
 
     /* Set the user thread id */
+    (*thread)->utid = _get_nxt_utid();
+
+    /* Set the user thread id */
     (*thread)->type = type;
 
     /* Set the state */
@@ -339,6 +342,9 @@ Thread thread_self(void) {
 }
 
 void thread_deinit(void) {
+
+    /* Free the main thread descriptor */
+    free(_main_thread);
 
     /* Deinitialize the many-many scheduler */
     mmsched_deinit();

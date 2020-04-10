@@ -3,8 +3,6 @@
 
 #include <signal.h>
 
-#include "./types.h"
-
 void stack_alloc(stack_t *stack);
 
 void stack_free(stack_t *stack);

@@ -1,6 +1,6 @@
-#define _GNU_SOURCE
-#include <unistd.h>
+#include <assert.h>
 
+#include "./utils.h"
 #include "./timer.h"
 
 /* Convert milliseconds to nanoseconds */
@@ -9,24 +9,27 @@
 #define _SECS_IN_MILLISECS(msec)     (_MILLISECS_TO_NANOSECS(msec) / 1000000000)
 /* Get remainder nanoseconds in total milliseconds */
 #define _NANOSECS_IN_MILLISECS(msec) (_MILLISECS_TO_NANOSECS(msec) % 1000000000)
-/* Kernel thread id */
-#define _KERNEL_THREAD_ID            (gettid())
 
 /**
- * @brief Initialize the timer for the given event
+ * @brief Initialize the timer
+ *
+ * Sets the required handler to be executed after the given time expires. The
+ * time should be specified in milliseconds. The function uses SIGALRM signal
+ * and hence should be prevented from use internally
+ *
  * @param[out] timer Pointer to the timer instance
- * @param[in] event Event to be executed after the timer expires
+ * @param[in] action Signal action after the timeout
  * @param[in] millisecs Timer out expiration period in milliseconds
  */
-void timer_set(Timer *timer, void (*event_func)(int), long millisecs) {
+void timer_set(Timer *timer, struct sigaction action, long millisecs) {
 
     /* Check for errors */
     assert(timer);
-    assert(event_func);
 
     /* Initialize the interval of timeout */
     timer->interval.it_interval.tv_nsec = 0;
     timer->interval.it_interval.tv_sec = 0;
+
     /* Initialize the expiration period of timeout */
     timer->interval.it_value.tv_nsec = _NANOSECS_IN_MILLISECS(millisecs);
     timer->interval.it_value.tv_sec = _SECS_IN_MILLISECS(millisecs);
@@ -34,14 +37,19 @@ void timer_set(Timer *timer, void (*event_func)(int), long millisecs) {
     /* Initialize the signal event */
     timer->event.sigev_notify = SIGEV_THREAD_ID;
     timer->event.sigev_signo = SIGALRM;
-    timer->event._sigev_un._tid = _KERNEL_THREAD_ID;
+    timer->event._sigev_un._tid = KERNEL_THREAD_ID;
+    timer->event.sigev_value.sival_ptr = NULL;
 
-    /* Initialize the signal handler i.e. event function */
-    signal(SIGALRM, event_func);
+    /* Set the required action for the given timeout */
+    sigaction(SIGALRM, &action, NULL);
 }
 
 /**
- * @brief Starts the timer according to the initialized values
+ * @brief Starts the timer
+ *
+ * It starts the previously set timer, by allocating a timer corresponding
+ * to previously set event
+ *
  * @param[in] timer Pointer to the timer instance
  */
 void timer_start(Timer *timer) {
@@ -57,7 +65,11 @@ void timer_start(Timer *timer) {
 }
 
 /**
- * @brief Starts the timer according to the initialized values
+ * @brief Stop the timer
+ *
+ * Deallocates a previously allocated timer. The timer should have been
+ * allocated using timer_start() first
+ *
  * @param[in] timer Pointer to the timer instance
  */
 void timer_stop(Timer *timer) {

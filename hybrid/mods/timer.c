@@ -38,6 +38,7 @@ void timer_set(Timer *timer, struct sigaction action, long millisecs) {
     timer->event.sigev_notify = SIGEV_THREAD_ID;
     timer->event.sigev_signo = SIGALRM;
     timer->event._sigev_un._tid = KERNEL_THREAD_ID;
+    timer->event.sigev_value.sival_ptr = NULL;
 
     /* Set the required action for the given timeout */
     sigaction(SIGALRM, &action, NULL);
