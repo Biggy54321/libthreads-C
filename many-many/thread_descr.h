@@ -29,8 +29,8 @@ typedef enum {
     /* Thread is waiting to join */
     THREAD_STATE_WAIT_JOIN,
 
-    /* Thread is waiting for spinlock */
-    THREAD_STATE_WAIT_SPINLOCK
+    /* Thread is waiting for mutex */
+    THREAD_STATE_WAIT_MUTEX
 } ThreadState;
 
 /**
@@ -68,8 +68,8 @@ struct Thread {
     /* Return context */
     ucontext_t *ret_cxt;
 
-    /* Ready list links */
-    ListMember mmrll_mem;
+    /* List links */
+    ListMember ll_mem;
 
     /* Error number */
     int error;
@@ -97,7 +97,7 @@ struct Thread {
 #define TD_IS_JOINED(thread)        ((thread)->state == THREAD_STATE_JOINED)
 #define TD_IS_WAITING(thread)                           \
     (((thread)->state == THREAD_STATE_WAIT_JOIN) ||     \
-     ((thread)->state == THREAD_STATE_WAIT_SPINLOCK))
+     ((thread)->state == THREAD_STATE_WAIT_MUTEX))
 
 /**
  * Thread descriptor launch

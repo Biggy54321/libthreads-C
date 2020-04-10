@@ -2,6 +2,7 @@
 #include <stddef.h>
 
 #include "./mods/utils.h"
+#include "./mmrll.h"
 #include "./thread_descr.h"
 #include "./thread_sync.h"
 
@@ -75,14 +76,8 @@ int thread_spin_lock(ThreadSpinLock *spinlock) {
         return THREAD_SUCCESS;
     }
 
-    /* Update the state */
-    TD_SET_STATE(thread, THREAD_STATE_WAIT_SPINLOCK);
-
     /* Acquire the lock */
     lock_acquire(&(*spinlock)->lock);
-
-    /* Update the state */
-    TD_SET_STATE(thread, THREAD_STATE_RUNNING);
 
     /* Set the owner to the current thread */
     (*spinlock)->owner = thread;
@@ -153,6 +148,161 @@ int thread_spin_destroy(ThreadSpinLock *spinlock) {
 
     /* Free the allocated memory */
     free(*spinlock);
+
+    return THREAD_SUCCESS;
+}
+
+/**
+ * @brief Initializes the mutex
+ *
+ * Allocates memory for the mutex object and sets the members to the base
+ * values
+ *
+ * @param[in] mutex Pointer to the mutex instance
+ */
+int thread_mutex_init(ThreadMutex *mutex) {
+
+    /* Check for errors */
+    if (!mutex) {            /* If pointer to mutex is invalid */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
+
+    /* Allocate the memory */
+    (*mutex) = alloc_mem(struct ThreadMutex);
+    /* Check for errors */
+    if (!(*mutex)) {
+
+        /* Set the errno */
+        thread_errno = EAGAIN;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
+
+    /* Set the owner to none */
+    (*mutex)->owner = NULL;
+
+    /* Initialize the lock word */
+    (*mutex)->word = LOCK_NOT_ACQUIRED;
+
+    /* Initialize the wait list */
+    list_init(&(*mutex)->waitll);
+
+    /* Initialize the member lock */
+    lock_init(&(*mutex)->lock);
+
+    return THREAD_SUCCESS;
+}
+
+int thread_mutex_lock(ThreadMutex *mutex) {
+
+    Thread thread;
+
+    /* Get the thread handle */
+    thread = thread_self();
+
+    while (1) {
+
+        /* If the word is updated atomically */
+        if (atomic_cas(&(*mutex)->word, LOCK_NOT_ACQUIRED, LOCK_ACQUIRED)) {
+
+            /* Set the owner to the current thread */
+            (*mutex)->owner = thread;
+
+            break;
+        }
+
+        /* Disable interrupts */
+        TD_DISABLE_INTR(thread);
+
+        /* Update the state */
+        TD_SET_STATE(thread, THREAD_STATE_WAIT_MUTEX);
+
+        /* Acquire the member lock */
+        lock_acquire(&(*mutex)->lock);
+
+        /* Add the thread descriptor to the wait list */
+        list_enqueue(&(*mutex)->waitll, thread, ll_mem);
+
+        /* Release the member lock */
+        lock_release(&(*mutex)->lock);
+
+        /* Return to scheduler */
+        TD_RET_CXT(thread);
+
+        /* Enable the interrupts */
+        TD_ENABLE_INTR(thread);
+    }
+
+    return THREAD_SUCCESS;
+}
+
+int thread_mutex_unlock(ThreadMutex *mutex) {
+
+    Thread thread;
+    Thread wait_thread;
+
+    /* Get the thread handle */
+    thread = thread_self();
+
+    /* Set the owner to non */
+    (*mutex)->owner = NULL;
+
+    /* Change the word status */
+    atomic_cas(&(*mutex)->word, LOCK_ACQUIRED, LOCK_NOT_ACQUIRED);
+
+    /* Acquire the member lock */
+    lock_acquire(&(*mutex)->lock);
+
+    /* If the wait list is not empty */
+    if (!list_is_empty(&(*mutex)->waitll)) {
+
+        /* Get the first waiting thread */
+        wait_thread = list_dequeue(&(*mutex)->waitll, struct Thread, ll_mem);
+
+        /* Make the thread runnable */
+        TD_SET_STATE(wait_thread, THREAD_STATE_RUNNING);
+
+        /* Lock the ready list */
+        mmrll_lock();
+
+        /* Add the current thread to the ready list */
+        mmrll_enqueue(wait_thread);
+
+        /* Unlock the ready list */
+        mmrll_unlock();
+    }
+
+    /* Release the member lock */
+    lock_release(&(*mutex)->lock);
+
+    return THREAD_SUCCESS;
+}
+
+/**
+ * @brief Destroy the mutex
+ *
+ * Free the allocated memory for the mutex object
+ *
+ * @param[in] mutex Pointer to the mutex instance
+ */
+int thread_mutex_destroy(ThreadMutex *mutex) {
+
+    /* Check for errors */
+    if ((mutex) ||           /* Pointer to mutex is valid */
+        (*mutex)) {          /* The argument points to a structure */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
+
+    /* Free the mutex object */
+    free(*mutex);
 
     return THREAD_SUCCESS;
 }

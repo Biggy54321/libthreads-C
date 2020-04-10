@@ -22,6 +22,7 @@ enum ThreadReturn {
  */
 struct Thread;
 struct ThreadSpinLock;
+struct ThreadMutex;
 
 /**
  * Required typedefs
@@ -30,6 +31,7 @@ typedef enum ThreadType ThreadType;
 typedef enum ThreadReturn ThreadReturn;
 typedef struct Thread *Thread;
 typedef struct ThreadSpinLock *ThreadSpinLock;
+typedef struct ThreadMutex *ThreadMutex;
 typedef void *ptr_t;
 typedef void *(*thread_start_t)(void *);
 
@@ -45,6 +47,7 @@ int thread_create(Thread *thread, thread_start_t start, ptr_t arg);
 int thread_join(Thread thread, ptr_t *ret);
 void thread_exit(ptr_t ret);
 Thread thread_self(void);
+int thread_yield(void);
 void *thread_main(void *arg);
 
 /**
@@ -54,6 +57,10 @@ int thread_spin_init(ThreadSpinLock *spinlock);
 int thread_spin_lock(ThreadSpinLock *spinlock);
 int thread_spin_unlock(ThreadSpinLock *spinlock);
 int thread_spin_destroy(ThreadSpinLock *spinlock);
+int thread_mutex_init(ThreadMutex *mutex);
+int thread_mutex_lock(ThreadMutex *mutex);
+int thread_mutex_unlock(ThreadMutex *mutex);
+int thread_mutex_destroy(ThreadMutex *mutex);
 
 /**
  * Thread signal handling routines

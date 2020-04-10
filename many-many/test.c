@@ -8,6 +8,7 @@
 
 int c = 0, c1 = 0, c2 = 0;
 ThreadSpinLock spin;
+ThreadMutex mutex;
 
 void *thread2(void *arg) {
 
@@ -15,16 +16,19 @@ void *thread2(void *arg) {
 
     print("Inside thread2\n");
 
-    /* while (i < 1000000) { */
+    while (i < 1000000) {
 
-    /*     thread_spin_lock(&spin); */
+        /* thread_spin_lock(&spin); */
+        thread_mutex_lock(&mutex);
 
-    /*     c++; */
-    /*     c2++; */
+        c++;
+        c2++;
 
-    /*     thread_spin_unlock(&spin); */
-    /*     i++; */
-    /* } */
+        /* thread_spin_unlock(&spin); */
+        thread_mutex_unlock(&mutex);
+
+        i++;
+    }
 
     thread_exit(NULL);
 }
@@ -34,16 +38,18 @@ void *thread1(void *arg) {
     int i = 0;
 
     print("Inside thread1\n");
-    /* while (i < 1000000) { */
+    while (i < 1000000) {
 
-    /*     thread_spin_lock(&spin); */
+        thread_mutex_lock(&mutex);
+        /* thread_spin_lock(&spin); */
 
-    /*     c++; */
-    /*     c1++; */
+        c++;
+        c1++;
 
-    /*     thread_spin_unlock(&spin); */
-    /*     i++; */
-    /* } */
+        thread_mutex_unlock(&mutex);
+        /* thread_spin_unlock(&spin); */
+        i++;
+    }
 
     thread_exit(NULL);
 }
@@ -59,7 +65,8 @@ void *thread_main(void *arg) {
 
     Thread t1, t2;
 
-    /* thread_spin_init(&spin); */
+    thread_spin_init(&spin);
+    thread_mutex_init(&mutex);
 
     print("Inside the main\n");
 
@@ -71,8 +78,8 @@ void *thread_main(void *arg) {
     thread_join(t1, NULL);
     thread_join(t2, NULL);
 
-    /* thread_spin_destroy(&spin); */
-
+    thread_spin_destroy(&spin);
+    thread_mutex_destroy(&mutex);
     /* printf("%d %d %d\n", c, c1 ,c2); */
 
     return NULL;

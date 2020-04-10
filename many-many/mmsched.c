@@ -198,8 +198,12 @@ static int _mmsched_dispatch(void *arg) {
         /* Get a thread to be scheduled */
         GET_NEXT_THREAD(thread);
 
-        /* Send the pending signals */
-        SEND_PENDING_SIGNALS(thread);
+        /* If the thread state is running */
+        if (TD_IS_RUNNING(thread)) {
+
+            /* Send the pending signals */
+            SEND_PENDING_SIGNALS(thread);
+        }
 
         /* Initialize the timer */
         TD_TIMER_INIT(thread, TIMER_INTR_ACTION, MMSCHED_TIME_SLICE_ms);
@@ -225,7 +229,6 @@ static int _mmsched_dispatch(void *arg) {
         switch (TD_GET_STATE(thread)) {
 
             case THREAD_STATE_RUNNING:
-            case THREAD_STATE_WAIT_SPINLOCK:
 
                 /* Carry the post schedule running action */
                 POST_SCHEDULE_RUNNING_ACTION(thread);

@@ -1,6 +1,7 @@
 #ifndef _THREAD_SYNC_H_
 #define _THREAD_SYNC_H_
 
+#include "./mods/list.h"
 #include "./mods/lock.h"
 #include "./thread.h"
 
@@ -13,6 +14,24 @@ struct ThreadSpinLock {
     Thread owner;
 
     /* Lock word */
+    Lock lock;
+};
+
+/**
+ * Thread mutex
+ */
+struct ThreadMutex {
+
+    /* Owner thread */
+    Thread owner;
+
+    /* Lock word */
+    int word;
+
+    /* List of waiting threads */
+    List waitll;
+
+    /* Lock for members */
     Lock lock;
 };
 
