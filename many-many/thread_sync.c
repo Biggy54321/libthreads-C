@@ -55,13 +55,13 @@ void thread_spin_lock(ThreadSpinLock *spinlock) {
     }
 
     /* Update the state */
-    thread->state = THREAD_STATE_WAIT_SPINLOCK;
+    TD_SET_STATE(thread, THREAD_STATE_WAIT_SPINLOCK);
 
     /* Acquire the lock */
     lock_acquire(&(*spinlock)->lock);
 
     /* Update the state */
-    thread->state = THREAD_STATE_RUNNING;
+    TD_SET_STATE(thread, THREAD_STATE_RUNNING);
 
     /* Set the owner to the current thread */
     (*spinlock)->owner = thread;

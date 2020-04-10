@@ -13,16 +13,18 @@ void *thread2(void *arg) {
 
     int i = 0;
 
-    while (i < 1000000) {
+    print("Inside thread2\n");
 
-        thread_spin_lock(&spin);
+    /* while (i < 1000000) { */
 
-        c++;
-        c2++;
+    /*     thread_spin_lock(&spin); */
 
-        thread_spin_unlock(&spin);
-        i++;
-    }
+    /*     c++; */
+    /*     c2++; */
+
+    /*     thread_spin_unlock(&spin); */
+    /*     i++; */
+    /* } */
 
     thread_exit(NULL);
 }
@@ -31,16 +33,17 @@ void *thread1(void *arg) {
 
     int i = 0;
 
-    while (i < 1000000) {
+    print("Inside thread1\n");
+    /* while (i < 1000000) { */
 
-        thread_spin_lock(&spin);
+    /*     thread_spin_lock(&spin); */
 
-        c++;
-        c1++;
+    /*     c++; */
+    /*     c1++; */
 
-        thread_spin_unlock(&spin);
-        i++;
-    }
+    /*     thread_spin_unlock(&spin); */
+    /*     i++; */
+    /* } */
 
     thread_exit(NULL);
 }
@@ -56,15 +59,19 @@ void *thread_main(void *arg) {
 
     Thread t1, t2;
 
-    thread_spin_init(&spin);
+    /* thread_spin_init(&spin); */
+
+    print("Inside the main\n");
 
     thread_create(&t1, thread1, NULL);
     thread_create(&t2, thread2, NULL);
 
+    /* while (1); */
+
     thread_join(t1, NULL);
     thread_join(t2, NULL);
 
-    thread_spin_destroy(&spin);
+    /* thread_spin_destroy(&spin); */
 
     /* printf("%d %d %d\n", c, c1 ,c2); */
 

@@ -7,8 +7,6 @@
 #define _SIG_LOW   (1u)
 /* Highest signal number */
 #define _SIG_HIGH  (31u)
-/* Get the signal mask */
-#define _SIG_GET_MASK(signo) (1 << ((signo) - 1))
 
 /**
  * @brief Update the signal mask
@@ -48,11 +46,11 @@ void thread_kill(Thread thread, int signo) {
     assert((signo >= _SIG_LOW) && (signo <= _SIG_HIGH));
 
     /* Acquire the member lock */
-    lock_acquire(&thread->mem_lock);
+    TD_LOCK(thread);
 
     /* Add the requested signal to the pending signal bitmask */
-    thread->pend_sig |= _SIG_GET_MASK(signo);
+    TD_SET_SIG_PENDING(thread, signo);
 
     /* Release the member lock */
-    lock_release(&thread->mem_lock);
+    TD_UNLOCK(thread);
 }

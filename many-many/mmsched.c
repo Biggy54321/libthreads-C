@@ -14,7 +14,7 @@
 #include "./thread_descr.h"
 
 /* Clone flags for the kernel thread of the scheduler */
-#define _MMSCHED_CLONE_FLAGS                    \
+#define MMSCHED_CLONE_FLAGS                     \
     (CLONE_VM | CLONE_FS | CLONE_FILES |        \
      CLONE_SIGHAND | CLONE_THREAD |             \
      CLONE_SYSVSEM | CLONE_PARENT_SETTID |      \
@@ -36,9 +36,87 @@ static void _mmsched_yield(int arg) {
     /* Get the thread handle */
     thread = thread_self();
 
+    /* If interrupts are disabled */
+    if (TD_IS_INTR_OFF(thread)) {
+
+        /* Stop the current timer */
+        TD_TIMER_STOP(thread);
+
+        /* Restart the timer */
+        TD_TIMER_START(thread);
+
+        return;
+    }
+
     /* Swap the context with the dispatcher */
-    swapcontext(thread->curr_cxt, thread->ret_cxt);
+    TD_RET_CXT(thread);
 }
+
+/**
+ * Action for the timer interrupt
+ */
+#define TIMER_INTR_ACTION                       \
+    ({                                          \
+        struct sigaction __action;              \
+                                                \
+        /* Initialize the action */             \
+        __action.sa_handler = _mmsched_yield;   \
+        __action.sa_flags = 0;                  \
+        sigfillset(&__action.sa_mask);          \
+                                                \
+        /* Return the initialized action */     \
+        __action;                               \
+    })
+
+/**
+ * Get the next ready thread
+ * @note This macro should be used in some kind of loop, as it employs a use
+ *       continue statement. It will be blocking till it gets a ready thread
+ *       on the list
+ */
+#define GET_NEXT_THREAD(thread)                 \
+  {                                             \
+      /* Lock the ready list */                 \
+      mmrll_lock();                             \
+                                                \
+      /* If the ready list is empty */          \
+      if (mmrll_is_empty()) {                   \
+                                                \
+          /* Unlock the list and continue */    \
+          mmrll_unlock();                       \
+          continue;                             \
+      }                                         \
+                                                \
+      /* Get a thread from the list */          \
+      (thread) = mmrll_dequeue();               \
+                                                \
+      /* Unlock the ready list */               \
+      mmrll_unlock();                           \
+  }
+
+/**
+ * Sends all the pending signals of the thread
+ */
+#define SEND_PENDING_SIGNALS(thread)                \
+  {                                                 \
+      int __signo;                                  \
+                                                    \
+      /* Lock the thread descriptor */              \
+      TD_LOCK(thread);                              \
+                                                    \
+      /* While there are no signals to be sent */   \
+      while (TD_IS_SIG_PENDING(thread)) {           \
+                                                    \
+          /* Get the signal number */               \
+          __signo = TD_GET_SIG_PENDING(thread);     \
+                                                    \
+          /* Send the signal */                     \
+          sig_send(KERNEL_THREAD_ID, __signo);      \
+      }                                             \
+                                                    \
+      /* Unlock the thread descriptor */            \
+      TD_UNLOCK(thread);                            \
+  }
 
 /**
  * @brief Dispatch a user thread
@@ -52,21 +130,10 @@ static void _mmsched_yield(int arg) {
 static int _mmsched_dispatch(void *arg) {
 
     Thread thread;
-    Timer timer;
     void *old_fs;
-    int signo;
-    struct sigaction act;
 
     /* Block all the signals */
     sig_block_all();
-
-    /* Initialize the action for the timer event */
-    act.sa_handler = _mmsched_yield;
-    act.sa_flags = 0;
-    sigfillset(&act.sa_mask);
-
-    /* Set the timer for the above action */
-    timer_set(&timer, act, MMSCHED_TIME_SLICE_ms);
 
     /* Get the current FS register value */
     old_fs = get_fs();
@@ -74,41 +141,14 @@ static int _mmsched_dispatch(void *arg) {
     /* While the scheduling is enabled */
     while (mmsched_enabled) {
 
-        /* Lock the ready list */
-        mmrll_lock();
+        /* Get a thread to be scheduled */
+        GET_NEXT_THREAD(thread);
 
-        /* If the ready list is empty */
-        if (mmrll_is_empty()) {
+        /* Send the pending signals */
+        SEND_PENDING_SIGNALS(thread);
 
-            /* Unlock the list and continue */
-            mmrll_unlock();
-            continue;
-        }
-
-        /* Get a thread from the list */
-        thread = mmrll_dequeue();
-
-        /* Unlock the ready list */
-        mmrll_unlock();
-
-        /* Lock the signal list */
-        lock_acquire(&thread->mem_lock);
-
-        /* While there are no signals to be sent */
-        while (thread->pend_sig) {
-
-            /* Get the signal number */
-            signo = ffs(thread->pend_sig);
-
-            /* Mask the signal */
-            thread->pend_sig ^= (1 << (signo - 1));
-
-            /* Send the signal */
-            sig_send(KERNEL_THREAD_ID, signo);
-        }
-
-        /* Unlock the signal list */
-        lock_release(&thread->mem_lock);
+        /* Initialize the timer */
+        TD_TIMER_INIT(thread, TIMER_INTR_ACTION, MMSCHED_TIME_SLICE_ms);
 
         repeat:
 
@@ -116,22 +156,21 @@ static int _mmsched_dispatch(void *arg) {
         set_fs(thread);
 
         /* Start the timer */
-        timer_start(&timer);
+        TD_TIMER_START(thread);
 
         /* Swap the context with the user thread */
-        swapcontext(thread->ret_cxt, thread->curr_cxt);
+        TD_SET_CXT(thread);
 
         /* Stop the timer */
-        timer_stop(&timer);
+        TD_TIMER_STOP(thread);
 
         /* Reset the FS register value to old value */
         set_fs(old_fs);
 
         /* Take action depending on the state */
-        switch (thread->state) {
+        switch (TD_GET_STATE(thread)) {
 
             case THREAD_STATE_RUNNING:
-            case THREAD_STATE_WAIT_JOIN:
             case THREAD_STATE_WAIT_SPINLOCK:
 
                 /* Check if any signals are yet to be delivered */
@@ -150,10 +189,36 @@ static int _mmsched_dispatch(void *arg) {
                 mmrll_unlock();
                 break;
 
+            case THREAD_STATE_WAIT_JOIN:
+                break;
+
             case THREAD_STATE_EXITED:
 
+                /* Acquire the member lock */
+                TD_LOCK(thread);
+
                 /* Clear the wait state */
-                thread->wait = 0;
+                TD_SET_OVER(thread);
+
+                /* Check if the thread has thread waiting to join */
+                if (TD_HAS_JOINING(thread)) {
+
+                    /* Change the state of the waiting thread to running */
+                    TD_SET_STATE(TD_GET_JOINING(thread), THREAD_STATE_RUNNING);
+
+                    /* Lock the ready list */
+                    mmrll_lock();
+
+                    /* Add the current thread to the ready list */
+                    mmrll_enqueue(TD_GET_JOINING(thread));
+
+                    /* Unlock the ready list */
+                    mmrll_unlock();
+                }
+
+                /* Release the member lock */
+                TD_UNLOCK(thread);
+
                 break;
 
             default:
@@ -181,7 +246,7 @@ static Scheduler *_mmsched_create(void) {
     /* Create the kernel thread */
     sched->ktid = clone(_mmsched_dispatch,
                         sched->stack.ss_sp + sched->stack.ss_size,
-                        _MMSCHED_CLONE_FLAGS,
+                        MMSCHED_CLONE_FLAGS,
                         NULL,
                         &sched->wait,
                         NULL,

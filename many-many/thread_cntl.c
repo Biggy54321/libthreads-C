@@ -1,19 +1,16 @@
 #define _GNU_SOURCE
 #include <sched.h>
 
-#include "./mods/list.h"
 #include "./mods/lock.h"
-#include "./mods/stack.h"
 #include "./mods/utils.h"
 #include "./mmrll.h"
-#include "./mmsched.h"
 #include "./thread.h"
 #include "./thread_descr.h"
 
 /* Next user thread identifier */
-static int _nxt_utid;
+int nxt_utid;
 /* Next user thread identifier lock */
-static Lock _nxt_utid_lk;
+Lock nxt_utid_lk;
 
 /**
  * @brief Get next thread id
@@ -27,17 +24,23 @@ static int _get_nxt_utid(void) {
     int utid;
 
     /* Acquire the utid lock */
-    lock_acquire(&_nxt_utid_lk);
+    lock_acquire(&nxt_utid_lk);
 
     /* Get the id */
-    utid = _nxt_utid++;
+    utid = nxt_utid++;
 
     /* Release the lock */
-    lock_release(&_nxt_utid_lk);
+    lock_release(&nxt_utid_lk);
 
     return utid;
 }
 
+/**
+ * @brief The actual start function of the thread
+ *
+ * This function launches the start function with the argument provided by
+ * the application program
+ */
 static void _many_many_start(void) {
 
     Thread thread;
@@ -46,12 +49,25 @@ static void _many_many_start(void) {
     thread = thread_self();
 
     /* Launch the thread start function */
-    thread->ret = thread->start(thread->arg);
+    TD_LAUNCH(thread);
+
+    /* Disable interrupt */
+    TD_DISABLE_INTR(thread);
 
     /* Set the state as exited */
-    thread->state = THREAD_STATE_EXITED;
+    TD_SET_STATE(thread, THREAD_STATE_EXITED);
 }
 
+/**
+ * @brief Create a thread
+ *
+ * Creates a many-many thread by allocating it the requried resources and
+ * adding it to the required book-keeping data structures
+ *
+ * @param[out] thread Pointer to the thread handle
+ * @param[in] start Start routine
+ * @param[in] arg Argument to the start routine
+ */
 void thread_create(Thread *thread, thread_start_t start, ptr_t arg) {
 
     /* Check for errors */
@@ -59,47 +75,13 @@ void thread_create(Thread *thread, thread_start_t start, ptr_t arg) {
     assert(start);
 
     /* Allocate the thread descriptor */
-    (*thread) = alloc_mem(struct Thread);
+    (*thread) = TD_ALLOC();
 
-    /* Set the user thread id */
-    (*thread)->utid = _get_nxt_utid();
+    /* Initialize the descriptor */
+    TD_INIT(*thread, _get_nxt_utid(), start, arg);
 
-    /* Set the state */
-    (*thread)->state = THREAD_STATE_RUNNING;
-
-    /* Set the start routine */
-    (*thread)->start = start;
-
-    /* Set the argument */
-    (*thread)->arg = arg;
-
-    /* Initialize the joining thread */
-    (*thread)->join_thread = NULL;
-
-    /* Initialize the member lock */
-    lock_init(&(*thread)->mem_lock);
-
-    /* Initialize the wait word */
-    (*thread)->wait = 1;
-
-    /* Allocate the current and return contexts */
-    (*thread)->curr_cxt = alloc_mem(ucontext_t);
-    (*thread)->ret_cxt = alloc_mem(ucontext_t);
-
-    /* Initialize the user thread context */
-    getcontext((*thread)->curr_cxt);
-
-    /* Allocate the stack */
-    stack_alloc(&((*thread)->curr_cxt->uc_stack));
-
-    /* Set the return context */
-    (*thread)->curr_cxt->uc_link = (*thread)->ret_cxt;
-
-    /* Make the context */
-    makecontext((*thread)->curr_cxt, _many_many_start, 0);
-
-    /* Initialize the pending signals */
-    (*thread)->pend_sig = 0;
+    /* Initialize the start routine context */
+    TD_INIT_CXT(*thread, _many_many_start);
 
     /* Acquire the many ready list lock */
     mmrll_lock();
@@ -111,13 +93,21 @@ void thread_create(Thread *thread, thread_start_t start, ptr_t arg) {
     mmrll_unlock();
 }
 
+/**
+ * @brief Joins with the target thread
+ *
+ * Waits for the target thread to complete its execution
+ *
+ * @param[in] thread Pointer to the thread handle
+ * @param[out] ret Pointer to return value holder
+ */
 void thread_join(Thread thread, ptr_t *ret) {
 
     Thread curr_thread;
 
     /* Check for errors */
     assert(thread);
-    assert(thread->state != THREAD_STATE_JOINED);
+    assert(!TD_IS_JOINED(thread));
 
     /* Get the current thread handle */
     curr_thread = thread_self();
@@ -126,50 +116,62 @@ void thread_join(Thread thread, ptr_t *ret) {
     assert(curr_thread != thread);
 
     /* Check for deadlock with target thread */
-    assert(curr_thread->join_thread != thread);
+    assert(TD_GET_JOINING(curr_thread) != thread);
 
     /* Acquire the member lock */
-    lock_acquire(&thread->mem_lock);
+    TD_LOCK(thread);
 
     /* Check if the thread already has another joining thread */
-    assert(!thread->join_thread);
+    assert(!TD_HAS_JOINING(thread));
 
     /* Set the joining thread */
-    thread->join_thread = curr_thread;
+    TD_SET_JOINING(thread, curr_thread);
 
-    /* Release the member lock */
-    lock_release(&thread->mem_lock);
-
-    /* Update the current thread state */
-    curr_thread->state = THREAD_STATE_WAIT_JOIN;
-
-    /* Wait for the thread completion */
-    while (!atomic_cas(&thread->wait, 0, 1));
+    /* Disable interrupts */
+    TD_DISABLE_INTR(curr_thread);
 
     /* Update the current thread state */
-    curr_thread->state = THREAD_STATE_RUNNING;
+    TD_SET_STATE(curr_thread, THREAD_STATE_WAIT_JOIN);
+
+    /* Check if the target thread did not completed its execution */
+    if (!TD_IS_OVER(thread)) {
+
+        /* Release the member lock */
+        TD_UNLOCK(thread);
+
+        /* Return to the scheduler */
+        TD_RET_CXT(curr_thread);
+
+    } else {
+
+        /* Release the member lock */
+        TD_UNLOCK(thread);
+    }
+
+    /* Enable the interrupts */
+    TD_ENABLE_INTR(curr_thread);
 
     /* If the return value is requested */
     if (ret) {
 
         /* Get the return value from the thread local storage */
-        *ret = thread->ret;
+        *ret = TD_GET_RET(thread);
     }
 
     /* Update the state of the target thread */
-    thread->state = THREAD_STATE_JOINED;
+    TD_SET_STATE(thread, THREAD_STATE_JOINED);
 
-    /* Free the stack */
-    stack_free(&thread->curr_cxt->uc_stack);
-
-    /* Free the contexts */
-    free(thread->curr_cxt);
-    free(thread->ret_cxt);
-
-    /* Free the thread descriptor */
-    free(thread);
+    /* Free the memory and resources of the descriptor */
+    TD_FREE(thread);
 }
 
+/**
+ * @brief Exit from the thread
+ *
+ * Stops the execution of the thread, and gives a return status
+ *
+ * @param[in] ret Return status
+ */
 void thread_exit(ptr_t ret) {
 
     Thread thread;
@@ -178,58 +180,30 @@ void thread_exit(ptr_t ret) {
     thread = thread_self();
 
     /* Check if thread is not dead or exited */
-    assert(thread->state != THREAD_STATE_EXITED);
-    assert(thread->state != THREAD_STATE_JOINED);
+    assert(!TD_IS_EXITED(thread));
+    assert(!TD_IS_JOINED(thread));
 
     /* Set the return value */
-    thread->ret = ret;
+    TD_SET_RET(thread, ret);
+
+    /* Disable interrupt */
+    TD_DISABLE_INTR(thread);
 
     /* Set the thread state as exited */
-    thread->state = THREAD_STATE_EXITED;
+    TD_SET_STATE(thread, THREAD_STATE_EXITED);
 
     /* Return to the scheduler */
-    setcontext(thread->ret_cxt);
+    TD_EXIT_CXT(thread);
 }
 
+/**
+ * @brief Return the calling thread handle
+ *
+ * Returns the handle of the calling thread, in order to perform operations on
+ * itself if any
+ */
 Thread thread_self(void) {
 
     /* Return the value of FS register */
     return (Thread)get_fs();
-}
-
-int main(int argc, char *argv[]) {
-
-    Thread main_thread;
-    int nb_kernel_threads;
-
-    if (argc < 2) {
-
-        nb_kernel_threads = 1;
-    } else {
-
-        nb_kernel_threads = atoi(argv[1]);
-    }
-
-    /* Initialize the global user thread id */
-    _nxt_utid = 0;
-
-    /* Initialize the global use thread id lock */
-    lock_init(&_nxt_utid_lk);
-
-    /* Initialize the many-many ready list */
-    mmrll_init();
-
-    /* Initialize the schedulers */
-    mmsched_init(nb_kernel_threads);
-
-    /* Create the main thread */
-    thread_create(&main_thread, thread_main, NULL);
-
-    /* Wait for its completion */
-    thread_join(main_thread, NULL);
-
-    /* Deinitialize the schedulers */
-    mmsched_deinit();
-
-    return 0;
 }
