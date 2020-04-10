@@ -10,11 +10,11 @@
  */
 enum ThreadReturn {
 
-    /* Successful execution */
-    THREAD_SUCCESS,
-
     /* Failed execution */
-    THREAD_FAIL
+    THREAD_FAIL = -1,
+
+    /* Successful execution */
+    THREAD_SUCCESS
 };
 
 /**
@@ -41,8 +41,8 @@ typedef void *(*thread_start_t)(void *);
 /**
  * Thread control routines
  */
-void thread_create(Thread *thread, thread_start_t start, ptr_t arg);
-void thread_join(Thread thread, ptr_t *ret);
+int thread_create(Thread *thread, thread_start_t start, ptr_t arg);
+int thread_join(Thread thread, ptr_t *ret);
 void thread_exit(ptr_t ret);
 Thread thread_self(void);
 void *thread_main(void *arg);
@@ -50,15 +50,15 @@ void *thread_main(void *arg);
 /**
  * Thread synchronization routines
  */
-void thread_spin_init(ThreadSpinLock *spinlock);
-void thread_spin_lock(ThreadSpinLock *spinlock);
-void thread_spin_unlock(ThreadSpinLock *spinlock);
-void thread_spin_destroy(ThreadSpinLock *spinlock);
+int thread_spin_init(ThreadSpinLock *spinlock);
+int thread_spin_lock(ThreadSpinLock *spinlock);
+int thread_spin_unlock(ThreadSpinLock *spinlock);
+int thread_spin_destroy(ThreadSpinLock *spinlock);
 
 /**
  * Thread signal handling routines
  */
-void thread_sigmask(int how, sigset_t *set, sigset_t *oldset);
-void thread_kill(Thread Thread, int signo);
+int thread_sigmask(int how, sigset_t *set, sigset_t *oldset);
+int thread_kill(Thread Thread, int signo);
 
 #endif

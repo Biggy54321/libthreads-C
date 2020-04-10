@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stddef.h>
-#include <assert.h>
 
 #include "./mods/utils.h"
 #include "./thread_descr.h"
@@ -14,19 +13,35 @@
  *
  * @param[in] spinlock Pointer to the spinlock instance
  */
-void thread_spin_init(ThreadSpinLock *spinlock) {
+int thread_spin_init(ThreadSpinLock *spinlock) {
 
     /* Check for errors */
-    assert(spinlock);
+    if (!spinlock) {            /* If pointer to spinlock is invalid */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* Allocate the memory */
     (*spinlock) = alloc_mem(struct ThreadSpinLock);
+    /* Check for errors */
+    if (!(*spinlock)) {
+
+        /* Set the errno */
+        thread_errno = EAGAIN;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* Set the owner to none */
     (*spinlock)->owner = NULL;
 
     /* Set the status to not acquired */
     (*spinlock)->lock = THREAD_SPINLOCK_NOT_ACQUIRED;
+
+    return THREAD_SUCCESS;
 }
 
 /**
@@ -37,13 +52,19 @@ void thread_spin_init(ThreadSpinLock *spinlock) {
  *
  * @param[in] spinlock Pointer to the spinlock instance
  */
-void thread_spin_lock(ThreadSpinLock *spinlock) {
+int thread_spin_lock(ThreadSpinLock *spinlock) {
 
     Thread thread;
 
     /* Check for errors */
-    assert(spinlock);
-    assert(*spinlock);
+    if ((spinlock) ||           /* Pointer to spinlock is valid */
+        (*spinlock)) {          /* The argument points to a structure */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* Get the thread handle */
     thread = thread_self();
@@ -51,7 +72,7 @@ void thread_spin_lock(ThreadSpinLock *spinlock) {
     /* If the current thread is the owner */
     if ((*spinlock)->owner == thread) {
 
-        return;
+        return THREAD_SUCCESS;
     }
 
     /* Update the state */
@@ -65,6 +86,8 @@ void thread_spin_lock(ThreadSpinLock *spinlock) {
 
     /* Set the owner to the current thread */
     (*spinlock)->owner = thread;
+
+    return THREAD_SUCCESS;
 }
 
 /**
@@ -74,13 +97,19 @@ void thread_spin_lock(ThreadSpinLock *spinlock) {
  *
  * @param[in] spinlock Pointer to the spinlock instance
  */
-void thread_spin_unlock(ThreadSpinLock *spinlock) {
+int thread_spin_unlock(ThreadSpinLock *spinlock) {
 
     Thread thread;
 
     /* Check for errors */
-    assert(spinlock);
-    assert(*spinlock);
+    if ((spinlock) ||           /* Pointer to spinlock is valid */
+        (*spinlock)) {          /* The argument points to a structure */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* Get the thread handle */
     thread = thread_self();
@@ -88,7 +117,10 @@ void thread_spin_unlock(ThreadSpinLock *spinlock) {
     /* If the owner of the spinlock is not the current thread */
     if ((*spinlock)->owner != thread) {
 
-        return;
+        /* Set the errno */
+        thread_errno = EACCES;
+        /* Return failure */
+        return THREAD_FAIL;
     }
 
     /* Set the owner to none */
@@ -96,6 +128,8 @@ void thread_spin_unlock(ThreadSpinLock *spinlock) {
 
     /* Release the lock */
     lock_release(&(*spinlock)->lock);
+
+    return THREAD_SUCCESS;
 }
 
 /**
@@ -105,12 +139,20 @@ void thread_spin_unlock(ThreadSpinLock *spinlock) {
  *
  * @param[in] spinlock Pointer to the spinlock instance
  */
-void thread_spin_destroy(ThreadSpinLock *spinlock) {
+int thread_spin_destroy(ThreadSpinLock *spinlock) {
 
     /* Check for errors */
-    assert(spinlock);
-    assert(*spinlock);
+    if ((spinlock) ||           /* Pointer to spinlock is valid */
+        (*spinlock)) {          /* The argument points to a structure */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* Free the allocated memory */
     free(*spinlock);
+
+    return THREAD_SUCCESS;
 }

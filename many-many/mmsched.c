@@ -68,6 +68,9 @@ static void _mmsched_yield(int arg) {
         __action;                               \
     })
 
+/* Repeatation label name */
+#define REPEAT_LABEL repeat
+
 /**
  * Get the next ready thread
  * @note This macro should be used in some kind of loop, as it employs a use
@@ -119,6 +122,57 @@ static void _mmsched_yield(int arg) {
   }
 
 /**
+ * Post schedule running state action
+ */
+#define POST_SCHEDULE_RUNNING_ACTION(thread)                \
+    {                                                       \
+        /* Check if any signals are yet to be delivered */  \
+        if (sig_is_pending()) {                             \
+                                                            \
+            goto REPEAT_LABEL;                              \
+        }                                                   \
+                                                            \
+        /* Lock the ready list */                           \
+        mmrll_lock();                                       \
+                                                            \
+        /* Add the current thread to the ready list */      \
+        mmrll_enqueue(thread);                              \
+                                                            \
+        /* Unlock the ready list */                         \
+        mmrll_unlock();                                     \
+    }
+
+/**
+ * Post schedule exited state action
+ */
+#define POST_SCHEDULE_EXITED_ACTION(thread)                             \
+    {                                                                   \
+        /* Acquire the member lock */                                   \
+        TD_LOCK(thread);                                                \
+                                                                        \
+        /* Clear the wait state */                                      \
+        TD_SET_OVER(thread);                                            \
+                                                                        \
+        /* Check if the thread has thread waiting to join */            \
+        if (TD_HAS_JOINING(thread)) {                                   \
+                                                                        \
+            /* Change the state of the waiting thread to running */     \
+            TD_SET_STATE(TD_GET_JOINING(thread), THREAD_STATE_RUNNING); \
+                                                                        \
+            /* Lock the ready list */                                   \
+            mmrll_lock();                                               \
+                                                                        \
+            /* Add the current thread to the ready list */              \
+            mmrll_enqueue(TD_GET_JOINING(thread));                      \
+                                                                        \
+            /* Unlock the ready list */                                 \
+            mmrll_unlock();                                             \
+        }                                                               \
+                                                                        \
+        /* Release the member lock */                                   \
+        TD_UNLOCK(thread);                                              \
+    }
+/**
  * @brief Dispatch a user thread
  *
  * Continuously selects a thread from the global list of threads and schedules
@@ -150,7 +204,7 @@ static int _mmsched_dispatch(void *arg) {
         /* Initialize the timer */
         TD_TIMER_INIT(thread, TIMER_INTR_ACTION, MMSCHED_TIME_SLICE_ms);
 
-        repeat:
+        REPEAT_LABEL:
 
         /* Set the FS register value */
         set_fs(thread);
@@ -173,20 +227,8 @@ static int _mmsched_dispatch(void *arg) {
             case THREAD_STATE_RUNNING:
             case THREAD_STATE_WAIT_SPINLOCK:
 
-                /* Check if any signals are yet to be delivered */
-                if (sig_is_pending()) {
-
-                    goto repeat;
-                }
-
-                /* Lock the ready list */
-                mmrll_lock();
-
-                /* Add the current thread to the ready list */
-                mmrll_enqueue(thread);
-
-                /* Unlock the ready list */
-                mmrll_unlock();
+                /* Carry the post schedule running action */
+                POST_SCHEDULE_RUNNING_ACTION(thread);
                 break;
 
             case THREAD_STATE_WAIT_JOIN:
@@ -194,31 +236,8 @@ static int _mmsched_dispatch(void *arg) {
 
             case THREAD_STATE_EXITED:
 
-                /* Acquire the member lock */
-                TD_LOCK(thread);
-
-                /* Clear the wait state */
-                TD_SET_OVER(thread);
-
-                /* Check if the thread has thread waiting to join */
-                if (TD_HAS_JOINING(thread)) {
-
-                    /* Change the state of the waiting thread to running */
-                    TD_SET_STATE(TD_GET_JOINING(thread), THREAD_STATE_RUNNING);
-
-                    /* Lock the ready list */
-                    mmrll_lock();
-
-                    /* Add the current thread to the ready list */
-                    mmrll_enqueue(TD_GET_JOINING(thread));
-
-                    /* Unlock the ready list */
-                    mmrll_unlock();
-                }
-
-                /* Release the member lock */
-                TD_UNLOCK(thread);
-
+                /* Carry the post schedule exited action */
+                POST_SCHEDULE_EXITED_ACTION(thread);
                 break;
 
             default:
@@ -239,6 +258,8 @@ static Scheduler *_mmsched_create(void) {
 
     /* Create a new scheduler */
     sched = alloc_mem(Scheduler);
+    /* Check for errors */
+    assert(sched);
 
     /* Allocate the stack */
     stack_alloc(&sched->stack);

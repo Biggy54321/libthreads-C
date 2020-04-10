@@ -68,14 +68,28 @@ static void _many_many_start(void) {
  * @param[in] start Start routine
  * @param[in] arg Argument to the start routine
  */
-void thread_create(Thread *thread, thread_start_t start, ptr_t arg) {
+int thread_create(Thread *thread, thread_start_t start, ptr_t arg) {
 
     /* Check for errors */
-    assert(thread);
-    assert(start);
+    if ((!thread) ||            /* If thread descriptor is not valid */
+        (!start)) {              /* If start function is not valid */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* Allocate the thread descriptor */
     (*thread) = TD_ALLOC();
+    /* Check for errors */
+    if (!(*thread)) {
+
+        /* Set the errno */
+        thread_errno = EAGAIN;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* Initialize the descriptor */
     TD_INIT(*thread, _get_nxt_utid(), start, arg);
@@ -91,6 +105,8 @@ void thread_create(Thread *thread, thread_start_t start, ptr_t arg) {
 
     /* Release the many ready list lock */
     mmrll_unlock();
+
+    return THREAD_SUCCESS;
 }
 
 /**
@@ -101,28 +117,44 @@ void thread_create(Thread *thread, thread_start_t start, ptr_t arg) {
  * @param[in] thread Pointer to the thread handle
  * @param[out] ret Pointer to return value holder
  */
-void thread_join(Thread thread, ptr_t *ret) {
+int thread_join(Thread thread, ptr_t *ret) {
 
     Thread curr_thread;
 
     /* Check for errors */
-    assert(thread);
-    assert(!TD_IS_JOINED(thread));
+    if ((!thread) ||              /* If thread descriptor is not valid */
+        (TD_IS_JOINED(thread))) { /* If target thread has already joined */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* Get the current thread handle */
     curr_thread = thread_self();
 
-    /* Check for deadlock with itself */
-    assert(curr_thread != thread);
+    /* Check for deadlocks */
+    if ((curr_thread == thread) ||                 /* Deadlock with itself */
+        (TD_GET_JOINING(curr_thread) == thread)) { /* Deadlock with target */
 
-    /* Check for deadlock with target thread */
-    assert(TD_GET_JOINING(curr_thread) != thread);
+        /* Set the errno */
+        thread_errno = EDEADLK;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* Acquire the member lock */
     TD_LOCK(thread);
 
     /* Check if the thread already has another joining thread */
-    assert(!TD_HAS_JOINING(thread));
+    if (TD_HAS_JOINING(thread)) {
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* Set the joining thread */
     TD_SET_JOINING(thread, curr_thread);
@@ -163,6 +195,8 @@ void thread_join(Thread thread, ptr_t *ret) {
 
     /* Free the memory and resources of the descriptor */
     TD_FREE(thread);
+
+    return THREAD_SUCCESS;
 }
 
 /**
@@ -179,9 +213,12 @@ void thread_exit(ptr_t ret) {
     /* Get the thread handle */
     thread = thread_self();
 
-    /* Check if thread is not dead or exited */
-    assert(!TD_IS_EXITED(thread));
-    assert(!TD_IS_JOINED(thread));
+    /* Check for errors */
+    if (TD_IS_EXITED(thread) || /* If thread has exited */
+        TD_IS_JOINED(thread)) { /* If thread has joined */
+
+        return;
+    }
 
     /* Set the return value */
     TD_SET_RET(thread, ret);

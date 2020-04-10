@@ -82,16 +82,13 @@ static inline void *get_fs(void) {
 #define alloc_mem(type)                         \
     ({                                          \
         /* Get the pointer of the given type */ \
-        type *_ptr;                             \
+        type *__ptr;                            \
                                                 \
         /* Allocate memory */                   \
-        _ptr = (type *)malloc(sizeof(type));    \
-                                                \
-        /* Check for errors */                  \
-        assert(_ptr);                           \
+        __ptr = (type *)malloc(sizeof(type));   \
                                                 \
         /* Return the pointer */                \
-        _ptr;                                   \
+        __ptr;                                  \
     })
 
 /**
