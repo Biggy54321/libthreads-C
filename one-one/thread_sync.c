@@ -248,7 +248,7 @@ int thread_cond_init(ThreadCond *cond) {
     cond->mutex = NULL;
 
     /* Set the wait word to zero */
-    cond->zero = 0;
+    cond->wait = 0;
 
     return THREAD_SUCCESS;
 }
@@ -313,7 +313,7 @@ int thread_cond_wait(ThreadCond *cond, ThreadMutex *mutex) {
     thread->thread_state = THREAD_STATE_WAIT_COND;
 
     /* Wait on the wait word */
-    futex(&cond->zero, FUTEX_WAIT, 0);
+    futex(&cond->wait, FUTEX_WAIT, 0);
 
     /* Update the state */
     thread->thread_state = THREAD_STATE_RUNNING;
@@ -348,17 +348,32 @@ int thread_cond_signal(ThreadCond *cond) {
         THREAD_RET_FAIL(EINVAL);
     }
 
+    /* Acquire the mutex */
+    if (thread_mutex_lock(cond->mutex) == THREAD_FAIL) {
+
+        return THREAD_SUCCESS;
+    }
+
     /* If the number of threads waiting are zero */
     if (!cond->nb_threads) {
+
+        /* Release the mutex */
+        thread_mutex_unlock(cond->mutex);
 
         return THREAD_SUCCESS;
     }
 
     /* Wake up only one thread */
-    if (futex(&cond->zero, FUTEX_WAKE, 1) == -1) {
+    if (futex(&cond->wait, FUTEX_WAKE, 1) == -1) {
+
+        /* Release the mutex */
+        thread_mutex_unlock(cond->mutex);
 
         return THREAD_FAIL;
     }
+
+    /* Release the mutex */
+    thread_mutex_unlock(cond->mutex);
 
     return THREAD_SUCCESS;
 }
@@ -378,17 +393,32 @@ int thread_cond_broadcast(ThreadCond *cond) {
         THREAD_RET_FAIL(EINVAL);
     }
 
+    /* Acquire the mutex */
+    if (thread_mutex_lock(cond->mutex) == THREAD_FAIL) {
+
+        return THREAD_SUCCESS;
+    }
+
     /* If the number of threads waiting are zero */
     if (!cond->nb_threads) {
+
+        /* Release the mutex */
+        thread_mutex_unlock(cond->mutex);
 
         return THREAD_SUCCESS;
     }
 
     /* Wake up only one thread */
-    if (futex(&cond->zero, FUTEX_WAKE, cond->nb_threads) == -1) {
+    if (futex(&cond->wait, FUTEX_WAKE, cond->nb_threads) == -1) {
+
+        /* Release the mutex */
+        thread_mutex_unlock(cond->mutex);
 
         return THREAD_FAIL;
     }
+
+    /* Release the mutex */
+    thread_mutex_unlock(cond->mutex);
 
     return THREAD_SUCCESS;
 }

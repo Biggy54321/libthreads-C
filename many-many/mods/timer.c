@@ -58,10 +58,12 @@ void timer_start(Timer *timer) {
     assert(timer);
 
     /* Allocate the timer */
-    timer_create(CLOCK_REALTIME, &timer->event, &timer->timerid);
+    /* timer_create(CLOCK_REALTIME, &timer->event, &timer->timerid); */
+    syscall(SYS_timer_create, CLOCK_REALTIME, &timer->event, &timer->timerid);
 
     /* Set the timer */
-    timer_settime(timer->timerid, 0, &timer->interval, NULL);
+    /* timer_settime(timer->timerid, 0, &timer->interval, NULL); */
+    syscall(SYS_timer_settime, timer->timerid, 0, &timer->interval, NULL);
 }
 
 /**
@@ -78,5 +80,6 @@ void timer_stop(Timer *timer) {
     assert(timer);
 
     /* Deallocate the timer */
-    timer_delete(timer->timerid);
+    /* timer_delete(timer->timerid); */
+    syscall(SYS_timer_delete, timer->timerid);
 }

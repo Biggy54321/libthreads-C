@@ -51,7 +51,7 @@ typedef struct _ThreadCond {
     ThreadMutex *mutex;
 
     /* Wait word */
-    int zero;
+    int wait;
 
 } ThreadCond;
 
