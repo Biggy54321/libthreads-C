@@ -12,6 +12,7 @@
 #include "./mmsched.h"
 #include "./thread.h"
 #include "./thread_descr.h"
+#include "./thread_sync.h"
 
 /* Clone flags for the kernel thread of the scheduler */
 #define MMSCHED_CLONE_FLAGS                     \
@@ -240,7 +241,8 @@ static int _mmsched_dispatch(void *arg) {
 
             case THREAD_STATE_WAIT_MUTEX:
 
-                /*  */
+                /* Release the mutex lock */
+                lock_release(&TD_GET_WAIT_MUTEX(thread)->mem_lock);
 
                 break;
 

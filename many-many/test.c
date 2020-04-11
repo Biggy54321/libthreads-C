@@ -18,14 +18,14 @@ void *thread2(void *arg) {
 
     while (i < 1000000) {
 
-        thread_spin_lock(&spin);
-        /* thread_mutex_lock(&mutex); */
+        /* thread_spin_lock(&spin); */
+        thread_mutex_lock(&mutex);
 
         c++;
         c2++;
 
-        thread_spin_unlock(&spin);
-        /* thread_mutex_unlock(&mutex); */
+        /* thread_spin_unlock(&spin); */
+        thread_mutex_unlock(&mutex);
 
         i++;
     }
@@ -40,14 +40,14 @@ void *thread1(void *arg) {
     print("Inside thread1\n");
     while (i < 1000000) {
 
-        /* thread_mutex_lock(&mutex); */
-        thread_spin_lock(&spin);
+        thread_mutex_lock(&mutex);
+        /* thread_spin_lock(&spin); */
 
         c++;
         c1++;
 
-        /* thread_mutex_unlock(&mutex); */
-        thread_spin_unlock(&spin);
+        thread_mutex_unlock(&mutex);
+        /* thread_spin_unlock(&spin); */
         i++;
     }
 
@@ -84,5 +84,3 @@ void *thread_main(void *arg) {
 
     return NULL;
 }
-/* Creating many-many threads in one-one thread fails badly */
-/* Initialize all the fields in the event part of the timer */

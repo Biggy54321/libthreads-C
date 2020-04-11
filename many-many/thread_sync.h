@@ -25,14 +25,11 @@ struct ThreadMutex {
     /* Owner thread */
     Thread owner;
 
-    /* Lock word */
-    int word;
-
-    /* List of waiting threads */
+    /* List of thread competing for the mutex */
     List waitll;
 
     /* Lock for members */
-    Lock lock;
+    Lock mem_lock;
 };
 
 /* Spinlock status */

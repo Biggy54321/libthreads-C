@@ -40,7 +40,7 @@ int thread_spin_init(ThreadSpinLock *spinlock) {
     (*spinlock)->owner = NULL;
 
     /* Set the status to not acquired */
-    (*spinlock)->lock = THREAD_SPINLOCK_NOT_ACQUIRED;
+    lock_init(&(*spinlock)->lock);
 
     return THREAD_SUCCESS;
 }
@@ -186,14 +186,11 @@ int thread_mutex_init(ThreadMutex *mutex) {
     /* Set the owner to none */
     (*mutex)->owner = NULL;
 
-    /* Initialize the lock word */
-    (*mutex)->word = LOCK_NOT_ACQUIRED;
-
     /* Initialize the wait list */
     list_init(&(*mutex)->waitll);
 
     /* Initialize the member lock */
-    lock_init(&(*mutex)->lock);
+    lock_init(&(*mutex)->mem_lock);
 
     return THREAD_SUCCESS;
 }
@@ -202,9 +199,10 @@ int thread_mutex_init(ThreadMutex *mutex) {
  * @brief Acquires the mutex
  *
  * Acquires the mutex and sets the owner of the lock to the calling thread.
- * The function does not return unless the lock is acquired
+ * The function does not return unless the lock is acquired. However a waiting
+ * thread will not consume CPU
  *
- * @param[in] spinlock Pointer to the spinlock instance
+ * @param[in] mutex Pointer to the mutex instance
  */
 int thread_mutex_lock(ThreadMutex *mutex) {
 
@@ -223,87 +221,122 @@ int thread_mutex_lock(ThreadMutex *mutex) {
     /* Get the thread handle */
     thread = thread_self();
 
+    /* Acquire the member lock */
+    lock_acquire(&(*mutex)->mem_lock);
+
     /* If the current thread is the owner */
     if ((*mutex)->owner == thread) {
+
+        /* Release the member lock */
+        lock_release(&(*mutex)->mem_lock);
 
         return THREAD_SUCCESS;
     }
 
-    /* For eternity */
-    while (1) {
+    /* If the lock is not owned */
+    if (!(*mutex)->owner) {
 
-        /* If the word is updated atomically */
-        if (atomic_cas(&(*mutex)->word, LOCK_NOT_ACQUIRED, LOCK_ACQUIRED)) {
-
-            /* Set the owner to the current thread */
-            (*mutex)->owner = thread;
-
-            break;
-        }
-
-        /* Disable interrupts */
-        TD_DISABLE_INTR(thread);
-
-        /* Update the state */
-        TD_SET_STATE(thread, THREAD_STATE_WAIT_MUTEX);
-
-        /* Acquire the member lock */
-        lock_acquire(&(*mutex)->lock);
-
-        /* Add the thread descriptor to the wait list */
-        list_enqueue(&(*mutex)->waitll, thread, ll_mem);
+        /* Set the owner as the current thread */
+        (*mutex)->owner = thread;
 
         /* Release the member lock */
-        lock_release(&(*mutex)->lock);
+        lock_release(&(*mutex)->mem_lock);
 
-        /* Return to scheduler */
-        TD_RET_CXT(thread);
-
-        /* Enable the interrupts */
-        TD_ENABLE_INTR(thread);
+        return THREAD_SUCCESS;
     }
+
+    /* Disable interrupt */
+    TD_DISABLE_INTR(thread);
+
+    /* Update the state */
+    TD_SET_STATE(thread, THREAD_STATE_WAIT_MUTEX);
+
+    /* Set the wait for mutex */
+    TD_SET_WAIT_MUTEX(thread, *mutex);
+
+    /* Add the thread to the list */
+    list_enqueue(&(*mutex)->waitll, thread, ll_mem);
+
+    /* Return to the scheduler */
+    TD_RET_CXT(thread);
+
+    /* Clear the wait for mutex */
+    TD_SET_WAIT_MUTEX(thread, NULL);
+
+    /* Update the state */
+    TD_SET_STATE(thread, THREAD_STATE_RUNNING);
+
+    /* Enabe the interrupt */
+    TD_ENABLE_INTR(thread);
 
     return THREAD_SUCCESS;
 }
 
+/**
+ * @brief Release the mutex lock
+ *
+ * Releases the mutex lock, and provides the access to the lock to another
+ * thread which has been waiting for the mutex previously
+ *
+ * @param[in] mutex Pointer to the mutex instance
+ */
 int thread_mutex_unlock(ThreadMutex *mutex) {
 
     Thread thread;
     Thread wait_thread;
 
+    /* Check for errors */
+    if ((mutex) ||           /* Pointer to mutex is valid */
+        (*mutex)) {          /* The argument points to a structure */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
+
     /* Get the thread handle */
     thread = thread_self();
 
-    /* Set the owner to non */
-    (*mutex)->owner = NULL;
+    /* Acquire the list lock */
+    lock_acquire(&(*mutex)->mem_lock);
 
-    /* Change the word status */
-    atomic_cas(&(*mutex)->word, LOCK_ACQUIRED, LOCK_NOT_ACQUIRED);
+    /* If the owner of the mutex is not the current thread */
+    if ((*mutex)->owner != thread) {
 
-    /* Acquire the member lock */
-    lock_acquire(&(*mutex)->lock);
+        /* Rel the list lock */
+        lock_release(&(*mutex)->mem_lock);
+        /* Set the errno */
+        thread_errno = EACCES;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
-    /* If the wait list is not empty */
+    /* Check if list is not empty */
     if (!list_is_empty(&(*mutex)->waitll)) {
 
         /* Get the first waiting thread */
         wait_thread = list_dequeue(&(*mutex)->waitll, struct Thread, ll_mem);
 
-        /* Make the thread runnable */
-        TD_SET_STATE(wait_thread, THREAD_STATE_RUNNING);
+        /* Set the owner as the wait thread */
+        (*mutex)->owner = wait_thread;
 
-        /* Lock the ready list */
+        /* Acquire the many list lock */
         mmrll_lock();
 
-        /* Add the current thread to the ready list */
+        /* Add thread to the many many ready list */
         mmrll_enqueue(wait_thread);
 
-        /* Unlock the ready list */
+        /* Acquire the many list lock */
         mmrll_unlock();
+    } else {
+
+        /* Set the owner to none */
+        (*mutex)->owner = NULL;
     }
 
-    /* Release the member lock */
-    lock_release(&(*mutex)->lock);
+    /* Acquire the list lock */
+    lock_release(&(*mutex)->mem_lock);
 
     return THREAD_SUCCESS;
 }
