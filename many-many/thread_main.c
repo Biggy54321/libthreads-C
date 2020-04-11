@@ -57,13 +57,13 @@ int main(int argc, char *argv[]) {
     thread_create(&main_td, thread_main, NULL);
 
     /* Wait for its completion */
-    while (!TD_IS_OVER(main_td));
+    while (!td_is_over(main_td));
 
     /* If the main thread is not joined */
-    if (!TD_IS_JOINED(main_td)) {
+    if (!td_is_joined(main_td)) {
 
         /* Free the main thread descriptor */
-        TD_FREE(main_td);
+        td_free(main_td);
     }
 
     /* Deinitialize the schedulers */

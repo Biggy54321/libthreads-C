@@ -38,19 +38,19 @@ static void _mmsched_yield(int arg) {
     thread = thread_self();
 
     /* If interrupts are disabled */
-    if (TD_IS_INTR_OFF(thread)) {
+    if (td_is_intr_off(thread)) {
 
         /* Stop the current timer */
-        TD_TIMER_STOP(thread);
+        td_timer_stop(thread);
 
         /* Restart the timer */
-        TD_TIMER_START(thread);
+        td_timer_start(thread);
 
         return;
     }
 
     /* Swap the context with the dispatcher */
-    TD_RET_CXT(thread);
+    td_ret_cxt(thread);
 }
 
 /**
@@ -78,7 +78,7 @@ static void _mmsched_yield(int arg) {
  *       continue statement. It will be blocking till it gets a ready thread
  *       on the list
  */
-#define GET_NEXT_THREAD(thread)                 \
+#define get_next_thread(thread)                 \
   {                                             \
       /* Lock the ready list */                 \
       mmrll_lock();                             \
@@ -101,31 +101,31 @@ static void _mmsched_yield(int arg) {
 /**
  * Sends all the pending signals of the thread
  */
-#define SEND_PENDING_SIGNALS(thread)                \
+#define send_pending_signals(thread)                \
   {                                                 \
       int __signo;                                  \
                                                     \
       /* Lock the thread descriptor */              \
-      TD_LOCK(thread);                              \
+      td_lock(thread);                              \
                                                     \
       /* While there are no signals to be sent */   \
-      while (TD_IS_SIG_PENDING(thread)) {           \
+      while (td_is_sig_pending(thread)) {           \
                                                     \
           /* Get the signal number */               \
-          __signo = TD_GET_SIG_PENDING(thread);     \
+          __signo = td_get_sig_pending(thread);     \
                                                     \
           /* Send the signal */                     \
           sig_send(KERNEL_THREAD_ID, __signo);      \
       }                                             \
                                                     \
       /* Unlock the thread descriptor */            \
-      TD_UNLOCK(thread);                            \
+      td_unlock(thread);                            \
   }
 
 /**
  * Post schedule running state action
  */
-#define POST_SCHEDULE_RUNNING_ACTION(thread)                \
+#define post_schedule_running_action(thread)                \
     {                                                       \
         /* Check if any signals are yet to be delivered */  \
         if (sig_is_pending()) {                             \
@@ -146,29 +146,29 @@ static void _mmsched_yield(int arg) {
 /**
  * Post schedule exited state action
  */
-#define POST_SCHEDULE_EXITED_ACTION(thread)                             \
+#define post_schedule_exited_action(thread)                             \
     {                                                                   \
         /* Acquire the member lock */                                   \
-        TD_LOCK(thread);                                                \
+        td_lock(thread);                                                \
                                                                         \
         /* Clear the wait state */                                      \
-        TD_SET_OVER(thread);                                            \
+        td_set_over(thread);                                            \
                                                                         \
         /* Check if the thread has thread waiting to join */            \
-        if (TD_HAS_JOINING(thread)) {                                   \
+        if (td_has_joining(thread)) {                                   \
                                                                         \
             /* Lock the ready list */                                   \
             mmrll_lock();                                               \
                                                                         \
             /* Add the current thread to the ready list */              \
-            mmrll_enqueue(TD_GET_JOINING(thread));                      \
+            mmrll_enqueue(td_get_joining(thread));                      \
                                                                         \
             /* Unlock the ready list */                                 \
             mmrll_unlock();                                             \
         }                                                               \
                                                                         \
         /* Release the member lock */                                   \
-        TD_UNLOCK(thread);                                              \
+        td_unlock(thread);                                              \
     }
 /**
  * @brief Dispatch a user thread
@@ -194,17 +194,17 @@ static int _mmsched_dispatch(void *arg) {
     while (mmsched_enabled) {
 
         /* Get a thread to be scheduled */
-        GET_NEXT_THREAD(thread);
+        get_next_thread(thread);
 
         /* If the thread state is running */
-        if (TD_IS_RUNNING(thread)) {
+        if (td_is_running(thread)) {
 
             /* Send the pending signals */
-            SEND_PENDING_SIGNALS(thread);
+            send_pending_signals(thread);
         }
 
         /* Initialize the timer */
-        TD_TIMER_INIT(thread, TIMER_INTR_ACTION, MMSCHED_TIME_SLICE_ms);
+        td_timer_init(thread, TIMER_INTR_ACTION, MMSCHED_TIME_SLICE_ms);
 
         REPEAT_LABEL:
 
@@ -212,44 +212,44 @@ static int _mmsched_dispatch(void *arg) {
         set_fs(thread);
 
         /* Start the timer */
-        TD_TIMER_START(thread);
+        td_timer_start(thread);
 
         /* Swap the context with the user thread */
-        TD_SET_CXT(thread);
+        td_set_cxt(thread);
 
         /* Stop the timer */
-        TD_TIMER_STOP(thread);
+        td_timer_stop(thread);
 
         /* Reset the FS register value to old value */
         set_fs(old_fs);
 
         /* Take action depending on the state */
-        switch (TD_GET_STATE(thread)) {
+        switch (td_get_state(thread)) {
 
             case THREAD_STATE_RUNNING:
 
                 /* Carry the post schedule running action */
-                POST_SCHEDULE_RUNNING_ACTION(thread);
+                post_schedule_running_action(thread);
                 break;
 
             case THREAD_STATE_WAIT_JOIN:
 
                 /* Release the lock of the wait for thread */
-                TD_UNLOCK(TD_GET_WAIT_THREAD(thread));
+                td_unlock(td_get_wait_thread(thread));
 
                 break;
 
             case THREAD_STATE_WAIT_MUTEX:
 
                 /* Release the mutex lock */
-                lock_release(&TD_GET_WAIT_MUTEX(thread)->mem_lock);
+                mut_unlock(td_get_wait_mutex(thread));
 
                 break;
 
             case THREAD_STATE_EXITED:
 
                 /* Carry the post schedule exited action */
-                POST_SCHEDULE_EXITED_ACTION(thread);
+                post_schedule_exited_action(thread);
                 break;
 
             default:

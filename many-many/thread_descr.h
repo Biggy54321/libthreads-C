@@ -96,30 +96,30 @@ struct Thread {
 /**
  * Thread descriptor state handling
  */
-#define TD_SET_STATE(thread, st)    ((thread)->state = (st))
-#define TD_GET_STATE(thread)        ((thread)->state)
-#define TD_IS_RUNNING(thread)       ((thread)->state == THREAD_STATE_RUNNING)
-#define TD_IS_EXITED(thread)        ((thread)->state == THREAD_STATE_EXITED)
-#define TD_IS_JOINED(thread)        ((thread)->state == THREAD_STATE_JOINED)
-#define TD_IS_WAITING(thread)                           \
+#define td_set_state(thread, st)    ((thread)->state = (st))
+#define td_get_state(thread)        ((thread)->state)
+#define td_is_running(thread)       ((thread)->state == THREAD_STATE_RUNNING)
+#define td_is_exited(thread)        ((thread)->state == THREAD_STATE_EXITED)
+#define td_is_joined(thread)        ((thread)->state == THREAD_STATE_JOINED)
+#define td_is_waiting(thread)                           \
     (((thread)->state == THREAD_STATE_WAIT_JOIN) ||     \
      ((thread)->state == THREAD_STATE_WAIT_MUTEX))
 
 /**
  * Thread descriptor launch
  */
-#define TD_LAUNCH(thread) ((thread)->ret = (thread)->start(thread->arg))
+#define td_launch(thread) ((thread)->ret = (thread)->start(thread->arg))
 
 /**
  * Thread descriptor return value handling
  */
-#define TD_SET_RET(thread, ret_val) ((thread)->ret = (ret_val))
-#define TD_GET_RET(thread)          ((thread)->ret)
+#define td_set_ret(thread, ret_val) ((thread)->ret = (ret_val))
+#define td_get_ret(thread)          ((thread)->ret)
 
 /**
  * Thread descriptor memory allocation
  */
-#define TD_ALLOC()                              \
+#define td_alloc()                              \
     ({                                          \
         Thread __td;                            \
                                                 \
@@ -140,7 +140,7 @@ struct Thread {
 /**
  * Thread descriptor memory free
  */
-#define TD_FREE(thread)                             \
+#define td_free(thread)                             \
     {                                               \
         /* Free the stack */                        \
         stack_free(&(thread)->curr_cxt->uc_stack);  \
@@ -156,7 +156,7 @@ struct Thread {
 /**
  * Thread descriptor base initialization
  */
-#define TD_INIT(thread, id, st, ar)             \
+#define td_init(thread, id, st, ar)             \
     {                                           \
         /* Set the user thread id */            \
         (thread)->utid = (id);                  \
@@ -192,7 +192,7 @@ struct Thread {
 /**
  * Thread descriptor context handling
  */
-#define TD_INIT_CXT(thread, func)                           \
+#define td_init_cxt(thread, func)                           \
     {                                                       \
         /* Get the current context */                       \
         getcontext((thread)->curr_cxt);                     \
@@ -203,19 +203,19 @@ struct Thread {
         /* Make the context of the given function */        \
         makecontext((thread)->curr_cxt, func, 0);           \
     }
-#define TD_SET_CXT(thread)                                  \
+#define td_set_cxt(thread)                                  \
     {                                                       \
         /* Store the current context in return context      \
          * and set the context of the thread function */    \
         swapcontext((thread)->ret_cxt, (thread)->curr_cxt); \
     }
-#define TD_RET_CXT(thread)                                  \
+#define td_ret_cxt(thread)                                  \
     {                                                       \
         /* Store the current context in current context     \
          * and set the context of the return function */    \
         swapcontext((thread)->curr_cxt, (thread)->ret_cxt); \
     }
-#define TD_EXIT_CXT(thread)                                 \
+#define td_exit_cxt(thread)                                 \
     {                                                       \
         /* Don't save the current context just return to    \
          * whatever return context already set */           \
@@ -225,18 +225,18 @@ struct Thread {
 /**
  * Thread descriptor wait/completion handling
  */
-#define TD_IS_OVER(thread)  (!(thread)->wait)
-#define TD_SET_OVER(thread) ((thread)->wait = 0)
+#define td_is_over(thread)  (!(thread)->wait)
+#define td_set_over(thread) ((thread)->wait = 0)
 
 /**
  * Thread descriptor pending signals handling
  */
-#define TD_SET_SIG_PENDING(thread, signo)           \
+#define td_set_sig_pending(thread, signo)           \
     ((thread)->pend_sig |= (1u << ((signo) - 1)))
-#define TD_CLEAR_SIG_PENDING(thread, signo)         \
+#define td_clear_sig_pending(thread, signo)         \
     ((thread)->pend_sig &= ~(1u << ((signo) - 1)))
-#define TD_IS_SIG_PENDING(thread)  ((thread)->pend_sig != 0)
-#define TD_GET_SIG_PENDING(thread)                      \
+#define td_is_sig_pending(thread)  ((thread)->pend_sig != 0)
+#define td_get_sig_pending(thread)                      \
     ({                                                  \
         int __signo;                                    \
                                                         \
@@ -253,37 +253,37 @@ struct Thread {
 /**
  * Thread descriptor joining thread handling
  */
-#define TD_GET_JOINING(thread)  ((thread)->join_thread)
-#define TD_HAS_JOINING(thread)  ((thread)->join_thread != NULL)
-#define TD_SET_JOINING(thread, join_thd)        \
+#define td_get_joining(thread)  ((thread)->join_thread)
+#define td_has_joining(thread)  ((thread)->join_thread != NULL)
+#define td_set_joining(thread, join_thd)        \
     ((thread)->join_thread = (join_thd))
 
 /**
  * Thread descriptor wait objects handling
  */
-#define TD_SET_WAIT_THREAD(thread, td)  ((thread)->wait_for = (td))
-#define TD_SET_WAIT_MUTEX(thread, mut)  ((thread)->wait_for = (mut))
-#define TD_GET_WAIT_THREAD(thread)      ((Thread)((thread)->wait_for))
-#define TD_GET_WAIT_MUTEX(thread)       ((ThreadMutex)((thread)->wait_for))
+#define td_set_wait_thread(thread, td)  ((thread)->wait_for = (td))
+#define td_set_wait_mutex(thread, mut)  ((thread)->wait_for = (mut))
+#define td_get_wait_thread(thread)      ((Thread)((thread)->wait_for))
+#define td_get_wait_mutex(thread)       ((ThreadMutex)((thread)->wait_for))
 
 /**
  * Thread descriptor interrupt handling
  */
-#define TD_DISABLE_INTR(thread) ((thread)->intr_off = 1)
-#define TD_ENABLE_INTR(thread)  ((thread)->intr_off = 0)
-#define TD_IS_INTR_OFF(thread)  ((thread)->intr_off)
+#define td_disable_intr(thread) ((thread)->intr_off = 1)
+#define td_enable_intr(thread)  ((thread)->intr_off = 0)
+#define td_is_intr_off(thread)  ((thread)->intr_off)
 
 /**
  * Thread descriptor timer handling
  */
-#define TD_TIMER_INIT(thread, act, tms) (timer_set(&(thread)->timer, act, tms))
-#define TD_TIMER_START(thread)          (timer_start(&(thread)->timer))
-#define TD_TIMER_STOP(thread)           (timer_stop(&(thread)->timer))
+#define td_timer_init(thread, act, tms) (timer_set(&(thread)->timer, act, tms))
+#define td_timer_start(thread)          (timer_start(&(thread)->timer))
+#define td_timer_stop(thread)           (timer_stop(&(thread)->timer))
 
 /**
  * Thread descriptor exclusive access handling
  */
-#define TD_LOCK(thread)    (lock_acquire(&(thread)->mem_lock))
-#define TD_UNLOCK(thread)  (lock_release(&(thread)->mem_lock))
+#define td_lock(thread)    (lock_acquire(&(thread)->mem_lock))
+#define td_unlock(thread)  (lock_release(&(thread)->mem_lock))
 
 #endif

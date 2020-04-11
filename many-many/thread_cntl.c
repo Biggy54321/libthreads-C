@@ -49,13 +49,13 @@ static void _many_many_start(void) {
     thread = thread_self();
 
     /* Launch the thread start function */
-    TD_LAUNCH(thread);
+    td_launch(thread);
 
     /* Disable interrupt */
-    TD_DISABLE_INTR(thread);
+    td_disable_intr(thread);
 
     /* Set the state as exited */
-    TD_SET_STATE(thread, THREAD_STATE_EXITED);
+    td_set_state(thread, THREAD_STATE_EXITED);
 }
 
 /**
@@ -81,7 +81,7 @@ int thread_create(Thread *thread, thread_start_t start, ptr_t arg) {
     }
 
     /* Allocate the thread descriptor */
-    (*thread) = TD_ALLOC();
+    (*thread) = td_alloc();
     /* Check for errors */
     if (!(*thread)) {
 
@@ -92,10 +92,10 @@ int thread_create(Thread *thread, thread_start_t start, ptr_t arg) {
     }
 
     /* Initialize the descriptor */
-    TD_INIT(*thread, _get_nxt_utid(), start, arg);
+    td_init(*thread, _get_nxt_utid(), start, arg);
 
     /* Initialize the start routine context */
-    TD_INIT_CXT(*thread, _many_many_start);
+    td_init_cxt(*thread, _many_many_start);
 
     /* Acquire the many ready list lock */
     mmrll_lock();
@@ -123,7 +123,7 @@ int thread_join(Thread thread, ptr_t *ret) {
 
     /* Check for errors */
     if ((!thread) ||              /* If thread descriptor is not valid */
-        (TD_IS_JOINED(thread))) { /* If target thread has already joined */
+        (td_is_joined(thread))) { /* If target thread has already joined */
 
         /* Set the errno */
         thread_errno = EINVAL;
@@ -136,7 +136,7 @@ int thread_join(Thread thread, ptr_t *ret) {
 
     /* Check for deadlocks */
     if ((curr_thread == thread) ||                 /* Deadlock with itself */
-        (TD_GET_JOINING(curr_thread) == thread)) { /* Deadlock with target */
+        (td_get_joining(curr_thread) == thread)) { /* Deadlock with target */
 
         /* Set the errno */
         thread_errno = EDEADLK;
@@ -145,13 +145,13 @@ int thread_join(Thread thread, ptr_t *ret) {
     }
 
     /* Acquire the member lock */
-    TD_LOCK(thread);
+    td_lock(thread);
 
     /* Check if the thread already has another joining thread */
-    if (TD_HAS_JOINING(thread)) {
+    if (td_has_joining(thread)) {
 
         /* Release the member lock */
-        TD_UNLOCK(thread);
+        td_unlock(thread);
         /* Set the errno */
         thread_errno = EINVAL;
         /* Return failure */
@@ -159,50 +159,50 @@ int thread_join(Thread thread, ptr_t *ret) {
     }
 
     /* Disable interrupts */
-    TD_DISABLE_INTR(curr_thread);
+    td_disable_intr(curr_thread);
 
     /* Set the joining thread */
-    TD_SET_JOINING(thread, curr_thread);
+    td_set_joining(thread, curr_thread);
 
     /* Set the thread, the calling thread is waiting for */
-    TD_SET_WAIT_THREAD(curr_thread, thread);
+    td_set_wait_thread(curr_thread, thread);
 
     /* Update the current thread state */
-    TD_SET_STATE(curr_thread, THREAD_STATE_WAIT_JOIN);
+    td_set_state(curr_thread, THREAD_STATE_WAIT_JOIN);
 
     /* Check if the target thread did not completed its execution */
-    if (!TD_IS_OVER(thread)) {
+    if (!td_is_over(thread)) {
 
         /* Return to the scheduler */
-        TD_RET_CXT(curr_thread);
+        td_ret_cxt(curr_thread);
 
     } else {
 
         /* Release the member lock */
-        TD_UNLOCK(thread);
+        td_unlock(thread);
     }
 
     /* Change the state of the calling thread to running */
-    TD_SET_STATE(curr_thread, THREAD_STATE_RUNNING);
+    td_set_state(curr_thread, THREAD_STATE_RUNNING);
 
     /* Clear the wait for thread */
-    TD_SET_WAIT_THREAD(curr_thread, NULL);
+    td_set_wait_thread(curr_thread, NULL);
 
     /* Enable the interrupts */
-    TD_ENABLE_INTR(curr_thread);
+    td_enable_intr(curr_thread);
 
     /* If the return value is requested */
     if (ret) {
 
         /* Get the return value from the thread local storage */
-        *ret = TD_GET_RET(thread);
+        *ret = td_get_ret(thread);
     }
 
     /* Update the state of the target thread */
-    TD_SET_STATE(thread, THREAD_STATE_JOINED);
+    td_set_state(thread, THREAD_STATE_JOINED);
 
     /* Free the memory and resources of the descriptor */
-    TD_FREE(thread);
+    td_free(thread);
 
     return THREAD_SUCCESS;
 }
@@ -222,23 +222,23 @@ void thread_exit(ptr_t ret) {
     thread = thread_self();
 
     /* Check for errors */
-    if (TD_IS_EXITED(thread) || /* If thread has exited */
-        TD_IS_JOINED(thread)) { /* If thread has joined */
+    if (td_is_exited(thread) || /* If thread has exited */
+        td_is_joined(thread)) { /* If thread has joined */
 
         return;
     }
 
     /* Set the return value */
-    TD_SET_RET(thread, ret);
+    td_set_ret(thread, ret);
 
     /* Disable interrupt */
-    TD_DISABLE_INTR(thread);
+    td_disable_intr(thread);
 
     /* Set the thread state as exited */
-    TD_SET_STATE(thread, THREAD_STATE_EXITED);
+    td_set_state(thread, THREAD_STATE_EXITED);
 
     /* Return to the scheduler */
-    TD_EXIT_CXT(thread);
+    td_exit_cxt(thread);
 }
 
 /**
@@ -264,13 +264,13 @@ int thread_yield(void) {
     thread = thread_self();
 
     /* Disable the interrupt */
-    TD_DISABLE_INTR(thread);
+    td_disable_intr(thread);
 
     /* Yield to the scheduler */
-    TD_RET_CXT(thread);
+    td_ret_cxt(thread);
 
     /* Enable the interrupt */
-    TD_ENABLE_INTR(thread);
+    td_enable_intr(thread);
 
     return 0;
 }

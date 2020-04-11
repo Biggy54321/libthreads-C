@@ -21,11 +21,11 @@ struct ThreadSpinLock {
 /**
  * Spinlock members handling
  */
-#define SPIN_SET_OWNER(spin, thread) ((spin)->owner = (thread))
-#define SPIN_GET_OWNER(spin)         ((spin)->owner)
-#define SPIN_ACQ_LOCK(spin)          (lock_acquire(&(spin)->lock))
-#define SPIN_REL_LOCK(spin)          (lock_release(&(spin)->lock))
-#define SPIN_ALLOC()                                \
+#define spin_set_owner(spin, thread) ((spin)->owner = (thread))
+#define spin_get_owner(spin)         ((spin)->owner)
+#define spin_acq_lock(spin)          (lock_acquire(&(spin)->lock))
+#define spin_rel_lock(spin)          (lock_release(&(spin)->lock))
+#define spin_alloc()                                \
     ({                                              \
         ThreadSpinLock __spin;                      \
                                                     \
@@ -35,7 +35,7 @@ struct ThreadSpinLock {
         /* Return the pointer */                    \
         __spin;                                     \
     })
-#define SPIN_INIT(spin)                         \
+#define spin_init(spin)                         \
     {                                           \
         /* Set the owner to none */             \
         (spin)->owner = NULL;                   \
@@ -43,7 +43,7 @@ struct ThreadSpinLock {
         /* Initialize the lock word */          \
         lock_init(&(spin)->lock);               \
     }
-#define SPIN_FREE(spin)              (free(spin))
+#define spin_free(spin)              (free(spin))
 
 /**
  * Thread mutex
@@ -63,17 +63,17 @@ struct ThreadMutex {
 /**
  * Mutex members handling
  */
-#define MUT_SET_OWNER(mut, thread) ((mut)->owner = (thread))
-#define MUT_GET_OWNER(mut)         ((mut)->owner)
-#define MUT_HAS_OWNER(mut)         ((mut)->owner)
-#define MUT_LOCK(mut)              (lock_acquire(&(mut)->mem_lock))
-#define MUT_UNLOCK(mut)            (lock_release(&(mut)->mem_lock))
-#define MUT_HAS_WAIT_THREAD(mut)   (!list_is_empty(&(mut)->waitll))
-#define MUT_ADD_WAIT_THREAD(mut, thread)                \
+#define mut_set_owner(mut, thread) ((mut)->owner = (thread))
+#define mut_get_owner(mut)         ((mut)->owner)
+#define mut_has_owner(mut)         ((mut)->owner)
+#define mut_lock(mut)              (lock_acquire(&(mut)->mem_lock))
+#define mut_unlock(mut)            (lock_release(&(mut)->mem_lock))
+#define mut_has_wait_thread(mut)   (!list_is_empty(&(mut)->waitll))
+#define mut_add_wait_thread(mut, thread)                \
     (list_enqueue(&(mut)->waitll, (thread), ll_mem))
-#define MUT_GET_WAIT_THREAD(mut)                            \
+#define mut_get_wait_thread(mut)                            \
     (list_dequeue(&(mut)->waitll, struct Thread, ll_mem))
-#define MUT_ALLOC()                                 \
+#define mut_alloc()                                 \
     ({                                              \
         ThreadMutex __mutex;                        \
                                                     \
@@ -83,7 +83,7 @@ struct ThreadMutex {
         /* Return the pointer */                    \
         __mutex;                                    \
     })
-#define MUT_INIT(mut)                           \
+#define mut_init(mut)                           \
     {                                           \
         /* Set the owner to none */             \
         (mut)->owner = NULL;                    \
@@ -94,6 +94,6 @@ struct ThreadMutex {
         /* Initialize the lock */               \
         lock_init(&(mut)->mem_lock);            \
     }
-#define MUT_FREE(mut)              (free(mut))
+#define mut_free(mut)              (free(mut))
 
 #endif

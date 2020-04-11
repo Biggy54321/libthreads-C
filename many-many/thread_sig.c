@@ -61,13 +61,13 @@ int thread_kill(Thread thread, int signo) {
     }
 
     /* Acquire the member lock */
-    TD_LOCK(thread);
+    td_lock(thread);
 
     /* Add the requested signal to the pending signal bitmask */
-    TD_SET_SIG_PENDING(thread, signo);
+    td_set_sig_pending(thread, signo);
 
     /* Release the member lock */
-    TD_UNLOCK(thread);
+    td_unlock(thread);
 
     return THREAD_SUCCESS;
 }
