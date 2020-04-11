@@ -69,3 +69,8 @@ int thread_sigmask(int how, sigset_t *set, sigset_t *oldset);
 int thread_kill(Thread Thread, int signo);
 
 #endif
+
+/**
+ * Check if races are occuring if the thread library functions are interrupted
+ * by signals, which call the thread library functions in them
+ */

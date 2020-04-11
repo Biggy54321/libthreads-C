@@ -74,8 +74,14 @@ struct Thread {
     /* Error number */
     int error;
 
-    /* Pointer to join waiting thread descriptor */
-    struct Thread *join_thread;
+    /* Pointer to the thread waiting for current thread to join */
+    Thread join_thread;
+
+    /* Pointer to the object the current thread is waiting for
+     * This can be -
+     * 1. Another thread
+     * 2. Mutex  */
+    ptr_t wait_for;
 
     /* Disable timer interrupt */
     int intr_off;
@@ -176,6 +182,9 @@ struct Thread {
         /* Set the pending signals */           \
         (thread)->pend_sig = 0;                 \
                                                 \
+        /* Set the wait for object */           \
+        (thread)->wait_for = NULL;              \
+                                                \
         /* Initialize the member lock */        \
         lock_init(&(thread)->mem_lock);         \
     }
@@ -248,6 +257,14 @@ struct Thread {
 #define TD_HAS_JOINING(thread)  ((thread)->join_thread != NULL)
 #define TD_SET_JOINING(thread, join_thd)        \
     ((thread)->join_thread = (join_thd))
+
+/**
+ * Thread descriptor wait objects handling
+ */
+#define TD_SET_WAIT_THREAD(thread, td)  ((thread)->wait_for = (td))
+#define TD_SET_WAIT_MUTEX(thread, mut)  ((thread)->wait_for = (mut))
+#define TD_GET_WAIT_THREAD(thread)      ((Thread)((thread)->wait_for))
+#define TD_GET_WAIT_MUTEX(thread)       ((ThreadMutex)((thread)->wait_for))
 
 /**
  * Thread descriptor interrupt handling

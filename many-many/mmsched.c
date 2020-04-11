@@ -156,9 +156,6 @@ static void _mmsched_yield(int arg) {
         /* Check if the thread has thread waiting to join */            \
         if (TD_HAS_JOINING(thread)) {                                   \
                                                                         \
-            /* Change the state of the waiting thread to running */     \
-            TD_SET_STATE(TD_GET_JOINING(thread), THREAD_STATE_RUNNING); \
-                                                                        \
             /* Lock the ready list */                                   \
             mmrll_lock();                                               \
                                                                         \
@@ -235,6 +232,16 @@ static int _mmsched_dispatch(void *arg) {
                 break;
 
             case THREAD_STATE_WAIT_JOIN:
+
+                /* Release the lock of the wait for thread */
+                TD_UNLOCK(TD_GET_WAIT_THREAD(thread));
+
+                break;
+
+            case THREAD_STATE_WAIT_MUTEX:
+
+                /*  */
+
                 break;
 
             case THREAD_STATE_EXITED:

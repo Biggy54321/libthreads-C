@@ -48,8 +48,9 @@ int thread_spin_init(ThreadSpinLock *spinlock) {
 /**
  * @brief Acquires the spinlock
  *
- * Acquires the spinlock and sets the owner of the lock to the calling thread.
- * The function does not return unless the lock is acquired
+ * Acquires the spinlock. The calling thread will busy wait till the lock is
+ * not acquired, i.e. the thread will not be blocked and will consume CPU
+ * while waiting
  *
  * @param[in] spinlock Pointer to the spinlock instance
  */
@@ -197,13 +198,38 @@ int thread_mutex_init(ThreadMutex *mutex) {
     return THREAD_SUCCESS;
 }
 
+/**
+ * @brief Acquires the mutex
+ *
+ * Acquires the mutex and sets the owner of the lock to the calling thread.
+ * The function does not return unless the lock is acquired
+ *
+ * @param[in] spinlock Pointer to the spinlock instance
+ */
 int thread_mutex_lock(ThreadMutex *mutex) {
 
     Thread thread;
 
+    /* Check for errors */
+    if ((mutex) ||           /* Pointer to mutex is valid */
+        (*mutex)) {          /* The argument points to a structure */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
+
     /* Get the thread handle */
     thread = thread_self();
 
+    /* If the current thread is the owner */
+    if ((*mutex)->owner == thread) {
+
+        return THREAD_SUCCESS;
+    }
+
+    /* For eternity */
     while (1) {
 
         /* If the word is updated atomically */

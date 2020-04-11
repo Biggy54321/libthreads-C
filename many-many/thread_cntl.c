@@ -150,26 +150,28 @@ int thread_join(Thread thread, ptr_t *ret) {
     /* Check if the thread already has another joining thread */
     if (TD_HAS_JOINING(thread)) {
 
+        /* Release the member lock */
+        TD_UNLOCK(thread);
         /* Set the errno */
         thread_errno = EINVAL;
         /* Return failure */
         return THREAD_FAIL;
     }
 
+    /* Disable interrupts */
+    TD_DISABLE_INTR(curr_thread);
+
     /* Set the joining thread */
     TD_SET_JOINING(thread, curr_thread);
 
-    /* Disable interrupts */
-    TD_DISABLE_INTR(curr_thread);
+    /* Set the thread, the calling thread is waiting for */
+    TD_SET_WAIT_THREAD(curr_thread, thread);
 
     /* Update the current thread state */
     TD_SET_STATE(curr_thread, THREAD_STATE_WAIT_JOIN);
 
     /* Check if the target thread did not completed its execution */
     if (!TD_IS_OVER(thread)) {
-
-        /* Release the member lock */
-        TD_UNLOCK(thread);
 
         /* Return to the scheduler */
         TD_RET_CXT(curr_thread);
@@ -179,6 +181,12 @@ int thread_join(Thread thread, ptr_t *ret) {
         /* Release the member lock */
         TD_UNLOCK(thread);
     }
+
+    /* Change the state of the calling thread to running */
+    TD_SET_STATE(curr_thread, THREAD_STATE_RUNNING);
+
+    /* Clear the wait for thread */
+    TD_SET_WAIT_THREAD(curr_thread, NULL);
 
     /* Enable the interrupts */
     TD_ENABLE_INTR(curr_thread);
