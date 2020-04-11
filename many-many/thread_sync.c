@@ -26,7 +26,8 @@ int thread_spin_init(ThreadSpinLock *spinlock) {
     }
 
     /* Allocate the memory */
-    (*spinlock) = alloc_mem(struct ThreadSpinLock);
+    (*spinlock) = SPIN_ALLOC();
+
     /* Check for errors */
     if (!(*spinlock)) {
 
@@ -36,11 +37,8 @@ int thread_spin_init(ThreadSpinLock *spinlock) {
         return THREAD_FAIL;
     }
 
-    /* Set the owner to none */
-    (*spinlock)->owner = NULL;
-
-    /* Set the status to not acquired */
-    lock_init(&(*spinlock)->lock);
+    /* Initialize the spinlock */
+    SPIN_INIT(*spinlock);
 
     return THREAD_SUCCESS;
 }
@@ -72,16 +70,16 @@ int thread_spin_lock(ThreadSpinLock *spinlock) {
     thread = thread_self();
 
     /* If the current thread is the owner */
-    if ((*spinlock)->owner == thread) {
+    if (SPIN_GET_OWNER(*spinlock) == thread) {
 
         return THREAD_SUCCESS;
     }
 
     /* Acquire the lock */
-    lock_acquire(&(*spinlock)->lock);
+    SPIN_ACQ_LOCK(*spinlock);
 
     /* Set the owner to the current thread */
-    (*spinlock)->owner = thread;
+    SPIN_SET_OWNER(*spinlock, thread);
 
     return THREAD_SUCCESS;
 }
@@ -111,7 +109,7 @@ int thread_spin_unlock(ThreadSpinLock *spinlock) {
     thread = thread_self();
 
     /* If the owner of the spinlock is not the current thread */
-    if ((*spinlock)->owner != thread) {
+    if (SPIN_GET_OWNER(*spinlock) != thread) {
 
         /* Set the errno */
         thread_errno = EACCES;
@@ -120,10 +118,10 @@ int thread_spin_unlock(ThreadSpinLock *spinlock) {
     }
 
     /* Set the owner to none */
-    (*spinlock)->owner = NULL;
+    SPIN_SET_OWNER(*spinlock, NULL);
 
     /* Release the lock */
-    lock_release(&(*spinlock)->lock);
+    SPIN_REL_LOCK(*spinlock);
 
     return THREAD_SUCCESS;
 }
@@ -148,7 +146,7 @@ int thread_spin_destroy(ThreadSpinLock *spinlock) {
     }
 
     /* Free the allocated memory */
-    free(*spinlock);
+    SPIN_FREE(*spinlock);
 
     return THREAD_SUCCESS;
 }
@@ -173,7 +171,8 @@ int thread_mutex_init(ThreadMutex *mutex) {
     }
 
     /* Allocate the memory */
-    (*mutex) = alloc_mem(struct ThreadMutex);
+    (*mutex) = MUT_ALLOC();
+
     /* Check for errors */
     if (!(*mutex)) {
 
@@ -183,14 +182,8 @@ int thread_mutex_init(ThreadMutex *mutex) {
         return THREAD_FAIL;
     }
 
-    /* Set the owner to none */
-    (*mutex)->owner = NULL;
-
-    /* Initialize the wait list */
-    list_init(&(*mutex)->waitll);
-
-    /* Initialize the member lock */
-    lock_init(&(*mutex)->mem_lock);
+    /* Initialize the mutex */
+    MUT_INIT(*mutex);
 
     return THREAD_SUCCESS;
 }
@@ -222,10 +215,10 @@ int thread_mutex_lock(ThreadMutex *mutex) {
     thread = thread_self();
 
     /* Acquire the member lock */
-    lock_acquire(&(*mutex)->mem_lock);
+    MUT_LOCK(*mutex);
 
     /* If the current thread is the owner */
-    if ((*mutex)->owner == thread) {
+    if (MUT_GET_OWNER(*mutex) == thread) {
 
         /* Release the member lock */
         lock_release(&(*mutex)->mem_lock);
@@ -234,13 +227,13 @@ int thread_mutex_lock(ThreadMutex *mutex) {
     }
 
     /* If the lock is not owned */
-    if (!(*mutex)->owner) {
+    if (!MUT_HAS_OWNER(*mutex)) {
 
         /* Set the owner as the current thread */
-        (*mutex)->owner = thread;
+        MUT_SET_OWNER(*mutex, thread);
 
         /* Release the member lock */
-        lock_release(&(*mutex)->mem_lock);
+        MUT_UNLOCK(*mutex);
 
         return THREAD_SUCCESS;
     }
@@ -255,7 +248,7 @@ int thread_mutex_lock(ThreadMutex *mutex) {
     TD_SET_WAIT_MUTEX(thread, *mutex);
 
     /* Add the thread to the list */
-    list_enqueue(&(*mutex)->waitll, thread, ll_mem);
+    MUT_ADD_WAIT_THREAD(*mutex, thread);
 
     /* Return to the scheduler */
     TD_RET_CXT(thread);
@@ -299,27 +292,27 @@ int thread_mutex_unlock(ThreadMutex *mutex) {
     thread = thread_self();
 
     /* Acquire the list lock */
-    lock_acquire(&(*mutex)->mem_lock);
+    MUT_LOCK(*mutex);
 
     /* If the owner of the mutex is not the current thread */
-    if ((*mutex)->owner != thread) {
+    if (MUT_GET_OWNER(*mutex) != thread) {
 
         /* Rel the list lock */
-        lock_release(&(*mutex)->mem_lock);
+        MUT_UNLOCK(*mutex);
         /* Set the errno */
         thread_errno = EACCES;
         /* Return failure */
         return THREAD_FAIL;
     }
 
-    /* Check if list is not empty */
-    if (!list_is_empty(&(*mutex)->waitll)) {
+    /* If there are threads waiting */
+    if (MUT_HAS_WAIT_THREAD(*mutex)) {
 
         /* Get the first waiting thread */
-        wait_thread = list_dequeue(&(*mutex)->waitll, struct Thread, ll_mem);
+        wait_thread = MUT_GET_WAIT_THREAD(*mutex);
 
         /* Set the owner as the wait thread */
-        (*mutex)->owner = wait_thread;
+        MUT_SET_OWNER(*mutex, wait_thread);
 
         /* Acquire the many list lock */
         mmrll_lock();
@@ -332,11 +325,11 @@ int thread_mutex_unlock(ThreadMutex *mutex) {
     } else {
 
         /* Set the owner to none */
-        (*mutex)->owner = NULL;
+        MUT_SET_OWNER(*mutex, NULL);
     }
 
     /* Acquire the list lock */
-    lock_release(&(*mutex)->mem_lock);
+    MUT_UNLOCK(*mutex);
 
     return THREAD_SUCCESS;
 }
@@ -361,7 +354,7 @@ int thread_mutex_destroy(ThreadMutex *mutex) {
     }
 
     /* Free the mutex object */
-    free(*mutex);
+    MUT_FREE(*mutex);
 
     return THREAD_SUCCESS;
 }
