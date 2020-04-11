@@ -175,12 +175,6 @@ int thread_join(
     /* Wait on the target thread's futex word */
     ret_val = futex(&thread->join_word, FUTEX_WAIT, thread->thread_id);
 
-    /* Check for errors */
-    /* if ((ret_val == -1) && (errno != EAGAIN)) { */
-
-    /*     return THREAD_FAIL; */
-    /* } */
-
     /* Set the current thread state */
     curr_thread->thread_state = THREAD_STATE_RUNNING;
 

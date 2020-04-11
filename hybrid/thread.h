@@ -19,11 +19,11 @@ enum ThreadType {
 
 enum ThreadReturn {
 
+    /* Failed execution */
+    THREAD_FAIL = -1,
+
     /* Successful execution */
     THREAD_SUCCESS,
-
-    /* Failed execution */
-    THREAD_FAIL
 };
 
 /**
@@ -38,7 +38,7 @@ struct ThreadSpinLock;
 typedef enum ThreadType ThreadType;
 typedef enum ThreadReturn ThreadReturn;
 typedef struct Thread *Thread;
-typedef struct ThreadSpinLock ThreadSpinLock;
+typedef struct ThreadSpinLock *ThreadSpinLock;
 typedef void *ptr_t;
 typedef void *(*thread_start_t)(void *);
 
@@ -50,13 +50,12 @@ typedef void *(*thread_start_t)(void *);
 /**
  * Thread control routines
  */
-void thread_init(int nb_kernel_threads);
 void thread_create(Thread *thread, thread_start_t start, ptr_t arg,
                      ThreadType type);
 void thread_join(Thread thread, ptr_t *ret);
 void thread_exit(ptr_t ret);
 Thread thread_self(void);
-void thread_deinit(void);
+ptr_t thread_main(ptr_t arg);
 
 /**
  * Thread synchronization routines
@@ -64,6 +63,7 @@ void thread_deinit(void);
 void thread_spin_init(ThreadSpinLock *spinlock);
 void thread_spin_lock(ThreadSpinLock *spinlock);
 void thread_spin_unlock(ThreadSpinLock *spinlock);
+void thread_spin_destroy(ThreadSpinLock *spinlock);
 
 /**
  * Thread signal handling routines

@@ -7,8 +7,6 @@
 #define _SIG_LOW   (1u)
 /* Highest signal number */
 #define _SIG_HIGH  (31u)
-/* Get the signal mask */
-#define _SIG_GET_MASK(signo) (1 << ((signo) - 1))
 
 /**
  * @brief Update the signal mask
@@ -22,15 +20,32 @@
  */
 void thread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
 
+    Thread thread;
+
     /* Check for errors */
     assert(set);
     assert(oldset);
 
+    /* Get the thread handle */
+    thread = thread_self();
+
     /* Remove SIGALRM from the signal set (just becuz i use it) */
     sigdelset(set, SIGALRM);
 
+    /* Disable interrupts if many many thread */
+    if (td_is_many_many(thread)) {
+
+        td_mm_disable_intr(thread);
+    }
+
     /* Call the signal process mask function */
     sigprocmask(how, set, oldset);
+
+    /* Enable interrupts if many many thread */
+    if (td_is_many_many(thread)) {
+
+        td_mm_enable_intr(thread);
+    }
 }
 
 /**
@@ -47,30 +62,20 @@ void thread_kill(Thread thread, int signo) {
     assert(thread);
     assert((signo >= _SIG_LOW) && (signo <= _SIG_HIGH));
 
-    /* Depending on the thread state */
-    switch (thread->type) {
+    /* If the thread is one one */
+    if (td_is_one_one(thread)) {
 
-        case THREAD_TYPE_ONE_ONE:
+        /* Send the signal to the target thread */
+        sig_send(td_oo_get_ktid(thread), signo);
+    } else {
 
-            /* Send the signal to the target thread */
-            sig_send(thread->ktid, signo);
+        /* Acquire the member lock */
+        td_lock(thread);
 
-            break;
+        /* Set the signal as pending */
+        td_mm_set_sig_pending(thread, signo);
 
-        case THREAD_TYPE_MANY_MANY:
-
-            /* Acquire the member lock */
-            lock_acquire(&thread->mem_lock);
-
-            /* Add the requested signal to the pending signal bitmask */
-            thread->pend_sig |= _SIG_GET_MASK(signo);
-
-            /* Release the member lock */
-            lock_release(&thread->mem_lock);
-
-            break;
-
-        default:
-            break;
+        /* Release the member lock */
+        td_unlock(thread);
     }
 }

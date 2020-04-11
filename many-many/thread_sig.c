@@ -20,6 +20,8 @@
  */
 int thread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
 
+    Thread thread;
+
     /* Check for errors */
     if ((!set) ||               /* Pointer to new set is not valid */
         (!oldset)) {            /* Pointer to the old set is not valid */
@@ -30,11 +32,20 @@ int thread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
         return THREAD_FAIL;
     }
 
+    /* Get the thread handle */
+    thread = thread_self();
+
     /* Remove SIGALRM from the signal set (just becuz i use it) */
     sigdelset(set, SIGALRM);
 
+    /* Disable the interrupts */
+    td_disable_intr(thread);
+
     /* Call the signal process mask function */
     sigprocmask(how, set, oldset);
+
+    /* Enable the interrupts */
+    td_enable_intr(thread);
 
     return THREAD_SUCCESS;
 }

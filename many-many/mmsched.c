@@ -146,29 +146,33 @@ static void _mmsched_yield(int arg) {
 /**
  * Post schedule exited state action
  */
-#define post_schedule_exited_action(thread)                             \
-    {                                                                   \
-        /* Acquire the member lock */                                   \
-        td_lock(thread);                                                \
-                                                                        \
-        /* Clear the wait state */                                      \
-        td_set_over(thread);                                            \
-                                                                        \
-        /* Check if the thread has thread waiting to join */            \
-        if (td_has_joining(thread)) {                                   \
-                                                                        \
-            /* Lock the ready list */                                   \
-            mmrll_lock();                                               \
-                                                                        \
-            /* Add the current thread to the ready list */              \
-            mmrll_enqueue(td_get_joining(thread));                      \
-                                                                        \
-            /* Unlock the ready list */                                 \
-            mmrll_unlock();                                             \
-        }                                                               \
-                                                                        \
-        /* Release the member lock */                                   \
-        td_unlock(thread);                                              \
+#define post_schedule_exited_action(thread)                     \
+    {                                                           \
+        /* Acquire the member lock */                           \
+        td_lock(thread);                                        \
+                                                                \
+        /* Clear the wait state */                              \
+        td_set_over(thread);                                    \
+                                                                \
+        /* Check if the thread has thread waiting to join */    \
+        if (td_has_joining(thread)) {                           \
+                                                                \
+            /* Release the member lock */                       \
+            td_unlock(thread);                                  \
+                                                                \
+            /* Lock the ready list */                           \
+            mmrll_lock();                                       \
+                                                                \
+            /* Add the current thread to the ready list */      \
+            mmrll_enqueue(td_get_joining(thread));              \
+                                                                \
+            /* Unlock the ready list */                         \
+            mmrll_unlock();                                     \
+        } else {                                                \
+                                                                \
+            /* Release the member lock */                       \
+            td_unlock(thread);                                  \
+        }                                                       \
     }
 /**
  * @brief Dispatch a user thread

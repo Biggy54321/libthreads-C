@@ -27,7 +27,7 @@ void mmrll_init(void) {
 Thread mmrll_dequeue(void) {
 
     /* Dequeue the first thread descriptor from the list */
-    return list_dequeue(&mmrll, struct Thread, mmrll_mem);
+    return list_dequeue(&mmrll, struct Thread, ll_mem);
 }
 
 /**
@@ -37,7 +37,7 @@ Thread mmrll_dequeue(void) {
 void mmrll_enqueue(Thread thread) {
 
     /* Add a thread descriptor to the list */
-    list_enqueue(&mmrll, thread, mmrll_mem);
+    list_enqueue(&mmrll, thread, ll_mem);
 }
 
 /**

@@ -11,12 +11,9 @@
 #include "./thread_descr.h"
 
 /* Next user thread identifier */
-static int _nxt_utid;
+int _nxt_utid;
 /* Next user thread identifier lock */
-static Lock _nxt_utid_lk;
-
-/* Main thread descriptor */
-static Thread _main_thread;
+Lock _nxt_utid_lk;
 
 /**
  * @brief Get next thread id
@@ -41,51 +38,12 @@ static int _get_nxt_utid(void) {
     return utid;
 }
 
-static void _main_thread_init(void) {
-
-    /* Allocate the thread descriptor */
-    _main_thread = alloc_mem(struct Thread);
-
-    /* Set the user thread id */
-    _main_thread->utid = 0;
-
-    /* Set the thread type */
-    _main_thread->type = THREAD_TYPE_ONE_ONE;
-
-    /* Set the thread state */
-    _main_thread->state = THREAD_STATE_RUNNING;
-
-    /* Set the wait word */
-    _main_thread->wait = 1;
-
-    /* Set the kernel thread id */
-    _main_thread->ktid = KERNEL_THREAD_ID;
-
-    /* Initialize the lock */
-    lock_init(&_main_thread->mem_lock);
-
-    /* Set the joining thread */
-    _main_thread->join_thread = NULL;
-}
-
-void thread_init(int nb_kernel_threads) {
-
-    /* Initialize the user thread id */
-    _nxt_utid = 1;
-
-    /* Initialize the user thread id lock */
-    lock_init(&_nxt_utid_lk);
-
-    /* Initialize the main thread */
-    _main_thread_init();
-
-    /* Initialize the many-many threads ready list */
-    mmrll_init();
-
-    /* Initialize the many-many scheduler */
-    mmsched_init(nb_kernel_threads);
-}
-
+/**
+ * @brief The thread start function which initiates the actual start
+ *        function
+ * @param[in] arg Not used
+ * @return Integer
+ */
 static int _one_one_start(void *arg) {
 
     Thread thread;
@@ -93,15 +51,48 @@ static int _one_one_start(void *arg) {
     /* Get the thread handle */
     thread = thread_self();
 
-    /* Launch the thread start function */
-    thread->ret = thread->start(thread->arg);
+    /* Launch the thread */
+    td_launch(thread);
 
     /* Set the state as exited */
-    thread->state = THREAD_STATE_EXITED;
+    td_set_state(thread, THREAD_STATE_EXITED);
+
+    /* Acquire the member lock */
+    td_lock(thread);
+
+    /* If the current thread has a joining */
+    if (td_has_join_thread(thread)) {
+
+        /* If the joining thread is of type many many */
+        if (td_is_many_many(td_get_join_thread(thread))) {
+
+            /* Release the member lock */
+            td_unlock(thread);
+
+            /* Lock the ready list */
+            mmrll_lock();
+
+            /* Add the current thread to the ready list */
+            mmrll_enqueue(td_get_join_thread(thread));
+
+            /* Unlock the ready list */
+            mmrll_unlock();
+        }
+    } else {
+
+        /* Release the member lock */
+        td_unlock(thread);
+    }
 
     return 0;
 }
 
+/**
+ * @brief The actual start function of the thread
+ *
+ * This function launches the start function with the argument provided by
+ * the application program
+ */
 static void _many_many_start(void) {
 
     Thread thread;
@@ -109,117 +100,83 @@ static void _many_many_start(void) {
     /* Get the thread handle */
     thread = thread_self();
 
-    /* Launch the thread start function */
-    thread->ret = thread->start(thread->arg);
+    /* Launch the thread */
+    td_launch(thread);
+
+    /* Disable interrupts */
+    td_mm_disable_intr(thread);
 
     /* Set the state as exited */
-    thread->state = THREAD_STATE_EXITED;
+    td_set_state(thread, THREAD_STATE_EXITED);
 }
 
+/**
+ * @brief Create a thread
+ *
+ * Creates a many-many thread by allocating it the requried resources and
+ * adding it to the required book-keeping data structures
+ *
+ * @param[out] thread Pointer to the thread handle
+ * @param[in] start Start routine
+ * @param[in] arg Argument to the start routine
+ * @param[in] type Type of the thread
+ */
 void thread_create(Thread *thread, thread_start_t start, ptr_t arg,
-                     ThreadType type) {
+                   ThreadType type) {
 
     /* Check for errors */
     assert(thread);
     assert(start);
     assert((type == THREAD_TYPE_ONE_ONE) || (type == THREAD_TYPE_MANY_MANY));
 
-    /* Allocate the thread descriptor */
-    (*thread) = alloc_mem(struct Thread);
+    /* If thread type is one one */
+    if (type == THREAD_TYPE_ONE_ONE) {
 
-    /* Set the user thread id */
-    (*thread)->utid = _get_nxt_utid();
+        /* Allocate the thread */
+        *thread = td_oo_alloc();
 
-    /* Set the user thread id */
-    (*thread)->type = type;
+        /* Initialize the thread */
+        td_oo_init(*thread, _get_nxt_utid(), start, arg);
 
-    /* Set the state */
-    (*thread)->state = THREAD_STATE_RUNNING;
+        /* Create the thread */
+        td_oo_create(*thread, _one_one_start);
 
-    /* Set the start routine */
-    (*thread)->start = start;
+    } else {
 
-    /* Set the argument */
-    (*thread)->arg = arg;
+        /* Allocate the thread */
+        *thread = td_mm_alloc();
 
-    /* Initialize the joining thread */
-    (*thread)->join_thread = NULL;
+        /* Initialize the thread */
+        td_mm_init(*thread, _get_nxt_utid(), start, arg);
 
-    /* Initialize the member lock */
-    lock_init(&(*thread)->mem_lock);
+        /* Create the thread */
+        td_mm_create(*thread, _many_many_start);
 
-    /* Depending on the thread type */
-    switch (type) {
-
-        case THREAD_TYPE_ONE_ONE:
-
-            /* Allocate the stack */
-            stack_alloc(&(*thread)->stack);
-
-            /* Create the kernel thread */
-            (*thread)->ktid = clone(_one_one_start,
-                                    (*thread)->stack.ss_sp +
-                                    (*thread)->stack.ss_size,
-                                    CLONE_VM | CLONE_FS | CLONE_FILES |
-                                    CLONE_SIGHAND | CLONE_THREAD |
-                                    CLONE_SYSVSEM | CLONE_SETTLS |
-                                    CLONE_CHILD_CLEARTID |
-                                    CLONE_PARENT_SETTID,
-                                    NULL,
-                                    &(*thread)->wait,
-                                    (*thread),
-                                    &(*thread)->wait);
-
-            /* Check for errors */
-            assert((*thread)->ktid != -1);
-
-            break;
-
-        case THREAD_TYPE_MANY_MANY:
-
-            /* Initialize the wait word */
-            (*thread)->wait = 1;
-
-            /* Allocate the current and return contexts */
-            (*thread)->curr_cxt = alloc_mem(ucontext_t);
-            (*thread)->ret_cxt = alloc_mem(ucontext_t);
-
-            /* Initialize the user thread context */
-            getcontext((*thread)->curr_cxt);
-
-            /* Allocate the stack */
-            stack_alloc(&((*thread)->curr_cxt->uc_stack));
-
-            /* Set the return context */
-            (*thread)->curr_cxt->uc_link = (*thread)->ret_cxt;
-
-            /* Make the context */
-            makecontext((*thread)->curr_cxt, _many_many_start, 0);
-
-            /* Initialize the pending signals */
-            (*thread)->pend_sig = 0;
-
-            /* Acquire the many ready list lock */
-            mmrll_lock();
-            /* Add the current thread to the list  */
-            mmrll_enqueue((*thread));
-            /* Release the many ready list lock */
-            mmrll_unlock();
-
-            break;
-
-        default:
-            break;
+        /* Acquire the many ready list lock */
+        mmrll_lock();
+        /* Add the current thread to the list  */
+        mmrll_enqueue(*thread);
+        /* Release the many ready list lock */
+        mmrll_unlock();
     }
 }
 
+/**
+ * @brief Joins with the target thread
+ *
+ * Waits for the target thread to complete its execution
+ *
+ * @param[in] thread Pointer to the thread handle
+ * @param[out] ret Pointer to return value holder
+ */
 void thread_join(Thread thread, ptr_t *ret) {
 
+    int wait_val;
     Thread curr_thread;
 
     /* Check for errors */
     assert(thread);
-    assert(thread->state != THREAD_STATE_JOINED);
+    assert(!td_is_joined(thread));
 
     /* Get the current thread handle */
     curr_thread = thread_self();
@@ -228,68 +185,107 @@ void thread_join(Thread thread, ptr_t *ret) {
     assert(curr_thread != thread);
 
     /* Check for deadlock with target thread */
-    assert(curr_thread->join_thread != thread);
+    assert(td_get_join_thread(curr_thread) != thread);
 
     /* Acquire the member lock */
-    lock_acquire(&thread->mem_lock);
+    td_lock(thread);
 
     /* Check if the thread already has another joining thread */
-    assert(!thread->join_thread);
+    assert(!td_has_join_thread(thread));
+
+    /* If the current thread type is many many */
+    if (td_is_many_many(curr_thread)) {
+
+        /* Disable the interrupts */
+        td_mm_disable_intr(curr_thread);
+    }
 
     /* Set the joining thread */
-    thread->join_thread = curr_thread;
+    td_set_join(thread, curr_thread);
 
-    /* Release the member lock */
-    lock_release(&thread->mem_lock);
+    /* Set the state as waiting for current thread */
+    td_set_state(curr_thread, THREAD_STATE_WAIT_JOIN);
 
-    /* Update the current thread state */
-    curr_thread->state = THREAD_STATE_WAIT_JOIN;
+    /* If target thread is not over */
+    if (!td_is_over(thread)) {
 
-    /* Wait for the thread completion */
-    while (!atomic_cas(&thread->wait, 0, 1));
+        /* If the current thread is one one */
+        if (td_is_one_one(curr_thread)) {
 
-    /* Update the current thread state */
-    curr_thread->state = THREAD_STATE_RUNNING;
+            /* Release the member lock */
+            td_unlock(thread);
+
+            /* If the target thread id one one */
+            if (td_is_one_one(thread)) {
+
+                wait_val = td_oo_get_ktid(thread);
+            } else {
+
+                wait_val = 1;
+            }
+
+            /* Wait */
+            futex(&thread->wait, FUTEX_WAIT, wait_val);
+
+        } else {
+
+            /* Return to scheduler */
+            td_mm_ret_cxt(curr_thread);
+
+            /* If the target thread type is one one */
+            if (td_is_one_one(thread)) {
+
+                /* Wait till the wait word becomes zero */
+                while (thread->wait);
+            }
+        }
+
+    } else {
+
+        /* Release the member lock */
+        td_unlock(thread);
+    }
+
+    /* Change the state of the calling thread to running */
+    td_set_state(curr_thread, THREAD_STATE_RUNNING);
+
+    /* Clear the wait for thread */
+    td_clear_wait_join_thread(curr_thread);
+
+    /* If the current thread type is many many */
+    if (td_is_many_many(curr_thread)) {
+
+        /* Enable the interrupts */
+        td_mm_enable_intr(curr_thread);
+    }
 
     /* If the return value is requested */
     if (ret) {
 
         /* Get the return value from the thread local storage */
-        *ret = thread->ret;
+        *ret = td_get_ret(thread);
     }
 
     /* Update the state of the target thread */
-    thread->state = THREAD_STATE_JOINED;
+    td_set_state(thread, THREAD_STATE_JOINED);
 
-    /* Depending on the thread type */
-    switch (thread->type) {
+    /* Free the target thread descriptor */
+    if (td_is_one_one(thread)) {
 
-        case THREAD_TYPE_ONE_ONE:
+        td_oo_free(thread);
+    } else {
 
-            /* Free the stack */
-            stack_free(&thread->stack);
-
-            break;
-
-        case THREAD_TYPE_MANY_MANY:
-
-            /* Free the stack */
-            stack_free(&thread->curr_cxt->uc_stack);
-
-            /* Free the contexts */
-            free(thread->curr_cxt);
-            free(thread->ret_cxt);
-
-            break;
-
-        default:
-            break;
+        td_mm_free(thread);
     }
-
-    /* Free the thread descriptor */
-    free(thread);
 }
 
+/**
+ * @brief Exit from the thread
+ *
+ * Stops the execution of the thread, and gives a return status
+ *
+ * @param[in] ret Return status
+ */
 void thread_exit(ptr_t ret) {
 
     Thread thread;
@@ -302,51 +298,63 @@ void thread_exit(ptr_t ret) {
     assert(thread->state != THREAD_STATE_JOINED);
 
     /* Set the return value */
-    thread->ret = ret;
+    td_set_ret(thread, ret);
+
+    /* If the type is many many */
+    if (td_is_many_many(thread)) {
+
+        /* Disable interrupts */
+        td_mm_disable_intr(thread);
+    }
 
     /* Set the thread state as exited */
-    thread->state = THREAD_STATE_EXITED;
+    td_set_state(thread, THREAD_STATE_EXITED);
 
-    /* Depending on the thread type */
-    switch (thread->type) {
+    /* Exit depending on the thread type */
+    if (td_is_one_one(thread)) {
 
-        case THREAD_TYPE_ONE_ONE:
+        /* Acquire the member lock */
+        td_lock(thread);
 
-            /* Exit using the syscall */
-            sys_exit(0);
-            break;
+        /* If the current thread has a joining */
+        if (td_has_join_thread(thread)) {
 
-        case THREAD_TYPE_MANY_MANY:
+            /* If the joining thread is of type many many */
+            if (td_is_many_many(td_get_join_thread(thread))) {
 
-            /* Return to the scheduler */
-            setcontext(thread->ret_cxt);
-            break;
+                /* Release the member lock */
+                td_unlock(thread);
 
-        default:
-            break;
-    }
-}
+                /* Lock the ready list */
+                mmrll_lock();
 
-Thread thread_self(void) {
+                /* Add the current thread to the ready list */
+                mmrll_enqueue(td_get_join_thread(thread));
 
-    /* If the calling thread is the main thread */
-    if (KERNEL_THREAD_ID == _main_thread->ktid) {
+                /* Unlock the ready list */
+                mmrll_unlock();
+            }
+        } else {
 
-        /* Return the main thread handle */
-        return _main_thread;
+            /* Release the member lock */
+            td_unlock(thread);
+        }
+
+        sys_exit(0);
     } else {
 
-        /* Return the value of FS register */
-        return (Thread)get_fs();
+        td_mm_exit_cxt(thread);
     }
 }
 
-void thread_deinit(void) {
+/**
+ * @brief Return the calling thread handle
+ *
+ * Returns the handle of the calling thread, in order to perform operations on
+ * itself if any
+ */
+Thread thread_self(void) {
 
-    /* Free the main thread descriptor */
-    free(_main_thread);
-
-    /* Deinitialize the many-many scheduler */
-    mmsched_deinit();
+    /* Return the value of FS register */
+    return (Thread)get_fs();
 }
-

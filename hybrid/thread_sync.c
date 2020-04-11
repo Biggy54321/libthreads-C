@@ -5,10 +5,10 @@
 #include "./thread_sync.h"
 
 /**
- * @brief Acquires the spinlock
+ * @brief Initializes the spinlock
  *
- * Acquires the spinlock and sets the owner of the lock to the calling thread.
- * The function does not return unless the lock is acquired
+ * Allocates the required memory for the spinlock object and initializes it
+ * to the base value
  *
  * @param[in] spinlock Pointer to the spinlock instance
  */
@@ -17,18 +17,19 @@ void thread_spin_init(ThreadSpinLock *spinlock) {
     /* Check for errors */
     assert(spinlock);
 
-    /* Set the owner to none */
-    spinlock->owner = NULL;
+    /* Allocate the spinlock */
+    *spinlock = spin_alloc();
 
-    /* Set the status to not acquired */
-    spinlock->lock = THREAD_SPINLOCK_NOT_ACQUIRED;
+    /* Initialize the spinlock */
+    spin_init(*spinlock);
 }
 
 /**
  * @brief Acquires the spinlock
  *
- * Acquires the spinlock and sets the owner of the lock to the calling thread.
- * The function does not return unless the lock is acquired
+ * Acquires the spinlock. The calling thread will busy wait till the lock is
+ * not acquired, i.e. the thread will not be blocked and will consume CPU
+ * while waiting
  *
  * @param[in] spinlock Pointer to the spinlock instance
  */
@@ -38,27 +39,22 @@ void thread_spin_lock(ThreadSpinLock *spinlock) {
 
     /* Check for errors */
     assert(spinlock);
+    assert(*spinlock);
 
     /* Get the thread handle */
     thread = thread_self();
 
     /* If the current thread is the owner */
-    if (spinlock->owner == thread) {
+    if (spin_get_owner(*spinlock) == thread) {
 
         return;
     }
 
-    /* Update the state */
-    thread->state = THREAD_STATE_WAIT_SPINLOCK;
-
     /* Acquire the lock */
-    lock_acquire(&spinlock->lock);
-
-    /* Update the state */
-    thread->state = THREAD_STATE_RUNNING;
+    spin_acq_lock(*spinlock);
 
     /* Set the owner to the current thread */
-    spinlock->owner = thread;
+    spin_set_owner(*spinlock, thread);
 }
 
 /**
@@ -74,19 +70,37 @@ void thread_spin_unlock(ThreadSpinLock *spinlock) {
 
     /* Check for errors */
     assert(spinlock);
+    assert(*spinlock);
 
     /* Get the thread handle */
     thread = thread_self();
 
     /* If the owner of the spinlock is not the current thread */
-    if (spinlock->owner != thread) {
+    if (spin_get_owner(*spinlock) != thread) {
 
         return;
     }
 
     /* Set the owner to none */
-    spinlock->owner = NULL;
+    spin_set_owner(*spinlock, NULL);
 
     /* Release the lock */
-    lock_release(&spinlock->lock);
+    spin_rel_lock(*spinlock);
+}
+
+/**
+ * @brief Destroy the spinlock
+ *
+ * Free the allocated memory for the spinlock object
+ *
+ * @param[in] spinlock Pointer to the spinlock instance
+ */
+void thread_spin_destroy(ThreadSpinLock *spinlock) {
+
+    /* Check for errors */
+    assert(spinlock);
+    assert(*spinlock);
+
+    /* Free the allocated memory */
+    spin_free(*spinlock);
 }

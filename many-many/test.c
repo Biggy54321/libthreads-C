@@ -63,16 +63,16 @@ void handler(int sig) {
 
 void *thread_main(void *arg) {
 
-    Thread t[500];
+    Thread t[1000];
 
     print("Inside main\n");
 
-    for (int i = 0; i < 500; i++) {
+    for (int i = 0; i < 1000; i++) {
 
         thread_create(&t[i], thread1, NULL);
     }
 
-    for (int i = 0; i < 500; i++) {
+    for (int i = 0; i < 1000; i++) {
 
         thread_join(t[i], NULL);
     }
