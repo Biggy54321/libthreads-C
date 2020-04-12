@@ -1,13 +1,3 @@
-one-one/a.out
-one-one/README.pdf
-many-many/old/*
-many-many/a.out
-many-many/TAGS
-many-many/temp
-hybrid/TAGS
-hybrid/TODO
-hybrid/README.pdf
-hybrid/a.out
-one-one/TODO
-one-one/TAGS
-test/*
+one-one/bin/*
+many-many/bin/*
+hybrid/bin/*
