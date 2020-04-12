@@ -302,3 +302,4 @@ int thread_kill(Thread Thread, int signo);
 
 * The library provides a dynamically linked and statically linked libraries with name **libthread.so** and **libthread.a** respectively. These libraries can be installed using the script given in the **build** directory of each library. The **install.sh** script will install the library in the host system.
 * The application program has to include the file **thread.h** and compile the program using **-lthread** option.
+* In case of many-many and hybrid threading libraries, the application program will take one command line argument, which would specify the number of kernel threads to be allocated for the many-many user threads. If the user does not specify the argument, then by default **one** kernel thread is allocated for scheduling the many-many threads in both the libraries.
