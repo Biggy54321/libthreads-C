@@ -115,12 +115,19 @@ static void _many_many_start(void) {
  * @param[in] arg Argument to the start routine
  * @param[in] type Type of the thread
  */
-void thread_create(Thread *thread, thread_start_t start, ptr_t arg, int type) {
+int thread_create(Thread *thread, thread_start_t start, ptr_t arg, int type) {
 
     /* Check for errors */
-    assert(thread);
-    assert(start);
-    assert((type == THREAD_TYPE_ONE_ONE) || (type == THREAD_TYPE_MANY_MANY));
+    if ((!thread) ||            /* Thread pointer is null */
+        (!start) ||              /* Start function is null */
+        ((type != THREAD_TYPE_ONE_ONE) && /* Thread type is invalid */
+         (type != THREAD_TYPE_MANY_MANY))) {
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* If thread type is one one */
     if (type == THREAD_TYPE_ONE_ONE) {
@@ -128,16 +135,43 @@ void thread_create(Thread *thread, thread_start_t start, ptr_t arg, int type) {
         /* Allocate the thread */
         *thread = td_oo_alloc();
 
+        /* Check for errors */
+        if (!(*thread)) {
+
+            /* Set the errno */
+            thread_errno = EAGAIN;
+            /* Return failure */
+            return THREAD_FAIL;
+        }
+
         /* Initialize the thread */
         td_oo_init(*thread, _get_nxt_utid(), start, arg);
 
         /* Create the thread */
         td_oo_create(*thread, _one_one_start);
 
+        /* Check for errors */
+        if (td_oo_get_ktid(*thread) == -1) {
+
+            /* Set the errno */
+            thread_errno = EAGAIN;
+            /* Return failure */
+            return THREAD_FAIL;
+        }
+
     } else {
 
         /* Allocate the thread */
         *thread = td_mm_alloc();
+
+        /* Check for errors */
+        if (!(*thread)) {
+
+            /* Set the errno */
+            thread_errno = EAGAIN;
+            /* Return failure */
+            return THREAD_FAIL;
+        }
 
         /* Initialize the thread */
         td_mm_init(*thread, _get_nxt_utid(), start, arg);
@@ -147,11 +181,15 @@ void thread_create(Thread *thread, thread_start_t start, ptr_t arg, int type) {
 
         /* Acquire the many ready list lock */
         mmrll_lock();
+
         /* Add the current thread to the list  */
         mmrll_enqueue(*thread);
+
         /* Release the many ready list lock */
         mmrll_unlock();
     }
+
+    return THREAD_SUCCESS;
 }
 
 /**
@@ -162,29 +200,47 @@ void thread_create(Thread *thread, thread_start_t start, ptr_t arg, int type) {
  * @param[in] thread Pointer to the thread handle
  * @param[out] ret Pointer to return value holder
  */
-void thread_join(Thread thread, ptr_t *ret) {
+int thread_join(Thread thread, ptr_t *ret) {
 
     int wait_val;
     Thread curr_thread;
 
     /* Check for errors */
-    assert(thread);
-    assert(!td_is_joined(thread));
+    if ((!thread) ||              /* If thread descriptor is not valid */
+        (td_is_joined(thread))) { /* If target thread has already joined */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* Get the current thread handle */
     curr_thread = thread_self();
 
-    /* Check for deadlock with itself */
-    assert(curr_thread != thread);
+    /* Check for deadlocks */
+    if ((curr_thread == thread) ||                 /* Deadlock with itself */
+        (td_get_join_thread(curr_thread) == thread)) { /* Deadlock with target */
 
-    /* Check for deadlock with target thread */
-    assert(td_get_join_thread(curr_thread) != thread);
+        /* Set the errno */
+        thread_errno = EDEADLK;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* Acquire the member lock */
     td_lock(thread);
 
     /* Check if the thread already has another joining thread */
-    assert(!td_has_join_thread(thread));
+    if (td_has_join_thread(thread)) {
+
+        /* Release the member lock */
+        td_unlock(thread);
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* If the current thread type is many many */
     if (td_is_many_many(curr_thread)) {
@@ -270,6 +326,8 @@ void thread_join(Thread thread, ptr_t *ret) {
 
         td_mm_free(thread);
     }
+
+    return THREAD_SUCCESS;
 }
 
 /**
@@ -286,9 +344,12 @@ void thread_exit(ptr_t ret) {
     /* Get the thread handle */
     thread = thread_self();
 
-    /* Check if thread is not dead or exited */
-    assert(thread->state != THREAD_STATE_EXITED);
-    assert(thread->state != THREAD_STATE_JOINED);
+    /* Check for errors */
+    if (td_is_exited(thread) || /* If thread has exited */
+        td_is_joined(thread)) { /* If thread has joined */
+
+        return;
+    }
 
     /* Set the return value */
     td_set_ret(thread, ret);
@@ -355,7 +416,7 @@ Thread thread_self(void) {
 /**
  * @brief Yields/returns the control to the scheduler
  */
-void thread_yield(void) {
+int thread_yield(void) {
 
     Thread thread;
 
@@ -377,4 +438,7 @@ void thread_yield(void) {
         /* Enable the interrupt */
         td_mm_enable_intr(thread);
     }
+
+    return THREAD_SUCCESS;
 }
+

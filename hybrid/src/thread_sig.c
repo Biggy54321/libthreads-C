@@ -17,13 +17,19 @@
  * @param[out] oldset Pointer to the signal set which will store the old signal
  *                    mask. Will store the previously block signal set
  */
-void thread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
+int thread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
 
     Thread thread;
 
     /* Check for errors */
-    assert(set);
-    assert(oldset);
+    if ((!set) ||               /* Pointer to new set is not valid */
+        (!oldset)) {            /* Pointer to the old set is not valid */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* Get the thread handle */
     thread = thread_self();
@@ -45,6 +51,8 @@ void thread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
 
         td_mm_enable_intr(thread);
     }
+
+    return THREAD_SUCCESS;
 }
 
 /**
@@ -55,11 +63,18 @@ void thread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
  * @param[in] thread Target thread handle
  * @param[in] signo Signal number
  */
-void thread_kill(Thread thread, int signo) {
+int thread_kill(Thread thread, int signo) {
 
     /* Check for errors */
-    assert(thread);
-    assert((signo >= _SIG_LOW) && (signo <= _SIG_HIGH));
+    if ((!thread) ||            /* Thread descriptor is invalid */
+        (signo < _SIG_LOW) ||   /* Signal number is below range */
+        (signo > _SIG_HIGH)) {  /* Signal number is above range */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* If the thread is one one */
     if (td_is_one_one(thread)) {
@@ -77,4 +92,6 @@ void thread_kill(Thread thread, int signo) {
         /* Release the member lock */
         td_unlock(thread);
     }
+
+    return THREAD_SUCCESS;
 }

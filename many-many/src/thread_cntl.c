@@ -269,5 +269,5 @@ int thread_yield(void) {
     /* Enable the interrupt */
     td_enable_intr(thread);
 
-    return 0;
+    return THREAD_SUCCESS;
 }

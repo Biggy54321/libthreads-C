@@ -1,5 +1,8 @@
 #!/bin/zsh
 
+# Create the binary directoy
+mkdir ../bin/ -p
+
 # Compile the position independent code for each source file
 for C_FILE in `ls -d ../src/*.c ../src/mods/*.c`
 do

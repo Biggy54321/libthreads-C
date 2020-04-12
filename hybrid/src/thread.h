@@ -9,6 +9,15 @@
  */
 enum {
 
+    /* Thread function execution failed */
+    THREAD_FAIL = -1,
+
+    /* Thread function execution succeeded */
+    THREAD_SUCCESS
+};
+
+enum {
+
     /* One-one thread type */
     THREAD_TYPE_ONE_ONE,
 
@@ -43,25 +52,25 @@ int *__get_thread_errno_loc(void);
 /**
  * Thread control routines
  */
-void thread_create(Thread *thread, thread_start_t start, ptr_t arg, int type);
-void thread_join(Thread thread, ptr_t *ret);
+int thread_create(Thread *thread, thread_start_t start, ptr_t arg, int type);
+int thread_join(Thread thread, ptr_t *ret);
 void thread_exit(ptr_t ret);
 Thread thread_self(void);
-void thread_yield(void);
+int thread_yield(void);
 ptr_t thread_main(ptr_t arg);
 
 /**
  * Thread synchronization routines
  */
-void thread_spin_init(ThreadSpinLock *spinlock);
-void thread_spin_lock(ThreadSpinLock *spinlock);
-void thread_spin_unlock(ThreadSpinLock *spinlock);
-void thread_spin_destroy(ThreadSpinLock *spinlock);
+int thread_spin_init(ThreadSpinLock *spinlock);
+int thread_spin_lock(ThreadSpinLock *spinlock);
+int thread_spin_unlock(ThreadSpinLock *spinlock);
+int thread_spin_destroy(ThreadSpinLock *spinlock);
 
 /**
  * Thread signal handling routines
  */
-void thread_sigmask(int how, sigset_t *set, sigset_t *oldset);
-void thread_kill(Thread Thread, int signo);
+int thread_sigmask(int how, sigset_t *set, sigset_t *oldset);
+int thread_kill(Thread Thread, int signo);
 
 #endif
