@@ -16,20 +16,6 @@ int thread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
 
     Thread thread;
 
-    /* Check for errors */
-    if (!set) {
-
-        /* Set the error number */
-        thread_errno = EINVAL;
-        return THREAD_FAIL;
-    }
-    if (!oldset) {
-
-        /* Set the error number */
-        thread_errno = EINVAL;
-        return THREAD_FAIL;
-    }
-
     /* Set the signal mask */
     sigprocmask(how, set, oldset);
 

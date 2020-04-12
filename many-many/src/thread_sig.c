@@ -20,16 +20,6 @@ int thread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
 
     Thread thread;
 
-    /* Check for errors */
-    if ((!set) ||               /* Pointer to new set is not valid */
-        (!oldset)) {            /* Pointer to the old set is not valid */
-
-        /* Set the errno */
-        thread_errno = EINVAL;
-        /* Return failure */
-        return THREAD_FAIL;
-    }
-
     /* Get the thread handle */
     thread = thread_self();
 
