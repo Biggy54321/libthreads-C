@@ -1,6 +1,8 @@
 #ifndef _THREAD_DESCR_H_
 #define _THREAD_DESCR_H_
 
+#define _GNU_SOURCE
+#include <sched.h>
 #include <ucontext.h>
 #include <signal.h>
 #include <string.h>

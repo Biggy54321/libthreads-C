@@ -4,10 +4,8 @@
 
 #include "./mods/utils.h"
 #include "./mods/list.h"
-#include "./mods/lock.h"
 #include "./mods/stack.h"
 #include "./mods/sig.h"
-#include "./mods/timer.h"
 #include "./mmrll.h"
 #include "./mmsched.h"
 #include "./thread.h"

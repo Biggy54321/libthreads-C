@@ -1,7 +1,6 @@
 #include "./mods/lock.h"
 #include "./mods/utils.h"
 #include "./mmrll.h"
-#include "./mmsched.h"
 #include "./thread.h"
 #include "./thread_descr.h"
 

@@ -1,4 +1,3 @@
-#include "./mods/sig.h"
 #include "./thread.h"
 #include "./thread_descr.h"
 

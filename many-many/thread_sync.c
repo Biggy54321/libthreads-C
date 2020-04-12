@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-#include "./mods/utils.h"
 #include "./mmrll.h"
 #include "./thread_descr.h"
 #include "./thread_sync.h"

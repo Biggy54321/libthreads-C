@@ -1,6 +1,3 @@
-#define _GNU_SOURCE
-#include <sched.h>
-
 #include "./mods/lock.h"
 #include "./mods/utils.h"
 #include "./mmrll.h"
