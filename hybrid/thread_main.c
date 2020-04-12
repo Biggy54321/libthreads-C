@@ -5,9 +5,9 @@
 #include "./thread_descr.h"
 
 /* Get the global user thread id */
-extern int _nxt_utid;
+extern int nxt_utid;
 /* Get the global user thrad id lock */
-extern Lock _nxt_utid_lk;
+extern Lock nxt_utid_lk;
 
 /* Default number of kernel threads */
 #define DEFAULT_NB_KTHREADS  (1u)
@@ -42,10 +42,10 @@ int main(int argc, char *argv[]) {
     }
 
     /* Initialize the global user thread id */
-    _nxt_utid = 0;
+    nxt_utid = 0;
 
     /* Initialize the global use thread id lock */
-    lock_init(&_nxt_utid_lk);
+    lock_init(&nxt_utid_lk);
 
     /* Initialize the many-many ready list */
     mmrll_init();

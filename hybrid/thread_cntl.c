@@ -1,9 +1,4 @@
-#define _GNU_SOURCE
-#include <sched.h>
-
-#include "./mods/list.h"
 #include "./mods/lock.h"
-#include "./mods/stack.h"
 #include "./mods/utils.h"
 #include "./mmrll.h"
 #include "./mmsched.h"
@@ -11,9 +6,9 @@
 #include "./thread_descr.h"
 
 /* Next user thread identifier */
-int _nxt_utid;
+int nxt_utid;
 /* Next user thread identifier lock */
-Lock _nxt_utid_lk;
+Lock nxt_utid_lk;
 
 /**
  * @brief Get next thread id
@@ -27,13 +22,13 @@ static int _get_nxt_utid(void) {
     int utid;
 
     /* Acquire the utid lock */
-    lock_acquire(&_nxt_utid_lk);
+    lock_acquire(&nxt_utid_lk);
 
     /* Get the id */
-    utid = _nxt_utid++;
+    utid = nxt_utid++;
 
     /* Release the lock */
-    lock_release(&_nxt_utid_lk);
+    lock_release(&nxt_utid_lk);
 
     return utid;
 }

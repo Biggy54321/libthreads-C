@@ -1,6 +1,8 @@
 #ifndef _THREAD_DESCR_H_
 #define _THREAD_DESCR_H_
 
+#define _GNU_SOURCE
+#include <sched.h>
 #include <ucontext.h>
 #include <signal.h>
 #include <string.h>
@@ -138,7 +140,7 @@ struct Thread {
 /**
  * Thread descriptor memory allocation
  */
-#define td_oo_alloc()                   \
+#define td_oo_alloc()                           \
     ({                                          \
         Thread __td;                            \
                                                 \
@@ -151,7 +153,7 @@ struct Thread {
         /* Return the thread descriptor */      \
         __td;                                   \
     })
-#define td_mm_alloc()                    \
+#define td_mm_alloc()                           \
     ({                                          \
         Thread __td;                            \
                                                 \
@@ -172,13 +174,10 @@ struct Thread {
 /**
  * Thread descriptor memory free
  */
-#define td_oo_free(thread)                          \
-    {                                               \
-        /* Free the stack */                        \
-        stack_free(&(thread)->stack);               \
-                                                    \
-        /* Free the descriptor */                   \
-        /* free(thread); */                         \
+#define td_oo_free(thread)                      \
+    {                                           \
+        /* Free the stack */                    \
+        stack_free(&(thread)->stack);           \
     }
 #define td_mm_free(thread)                          \
     {                                               \
@@ -188,9 +187,6 @@ struct Thread {
         /* Free the contexts */                     \
         free((thread)->curr_cxt);                   \
         free((thread)->ret_cxt);                    \
-                                                    \
-        /* Free the descriptor */                   \
-        /* free(thread); */                         \
     }
 
 /**
@@ -224,7 +220,7 @@ struct Thread {
     }
 #define td_mm_init(thread, id, st, ar)          \
     {                                           \
-    /* Set the user thread id */                \
+        /* Set the user thread id */            \
         (thread)->utid = (id);                  \
                                                 \
         /* Set the thread type */               \

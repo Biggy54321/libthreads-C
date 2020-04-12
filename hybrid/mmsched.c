@@ -4,15 +4,12 @@
 
 #include "./mods/utils.h"
 #include "./mods/list.h"
-#include "./mods/lock.h"
 #include "./mods/stack.h"
 #include "./mods/sig.h"
-#include "./mods/timer.h"
 #include "./mmrll.h"
 #include "./mmsched.h"
 #include "./thread.h"
 #include "./thread_descr.h"
-#include "./thread_sync.h"
 
 /* Clone flags for the kernel thread of the scheduler */
 #define MMSCHED_CLONE_FLAGS                     \
