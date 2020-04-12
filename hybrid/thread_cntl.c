@@ -352,3 +352,30 @@ Thread thread_self(void) {
     /* Return the value of FS register */
     return (Thread)get_fs();
 }
+
+/**
+ * @brief Yields/returns the control to the scheduler
+ */
+void thread_yield(void) {
+
+    Thread thread;
+
+    /* Get the thread handle */
+    thread = thread_self();
+
+    /* If the thread type is one one */
+    if (td_is_one_one(thread)) {
+
+        sched_yield();
+    } else {
+
+        /* Disable the interrupt */
+        td_disable_intr(thread);
+
+        /* Yield to the scheduler */
+        td_ret_cxt(thread);
+
+        /* Enable the interrupt */
+        td_enable_intr(thread);
+    }
+}

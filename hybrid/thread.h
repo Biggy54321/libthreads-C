@@ -55,6 +55,7 @@ void thread_create(Thread *thread, thread_start_t start, ptr_t arg,
 void thread_join(Thread thread, ptr_t *ret);
 void thread_exit(ptr_t ret);
 Thread thread_self(void);
+void thread_yield(void);
 ptr_t thread_main(ptr_t arg);
 
 /**
