@@ -25,7 +25,6 @@ struct ThreadSpinLock;
 /**
  * Required typedefs
  */
-typedef enum ThreadType ThreadType;
 typedef struct Thread *Thread;
 typedef struct ThreadSpinLock *ThreadSpinLock;
 typedef void *ptr_t;
@@ -44,8 +43,7 @@ int *__get_thread_errno_loc(void);
 /**
  * Thread control routines
  */
-void thread_create(Thread *thread, thread_start_t start, ptr_t arg,
-                   ThreadType type);
+void thread_create(Thread *thread, thread_start_t start, ptr_t arg, int type);
 void thread_join(Thread thread, ptr_t *ret);
 void thread_exit(ptr_t ret);
 Thread thread_self(void);

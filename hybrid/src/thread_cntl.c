@@ -115,8 +115,7 @@ static void _many_many_start(void) {
  * @param[in] arg Argument to the start routine
  * @param[in] type Type of the thread
  */
-void thread_create(Thread *thread, thread_start_t start, ptr_t arg,
-                   ThreadType type) {
+void thread_create(Thread *thread, thread_start_t start, ptr_t arg, int type) {
 
     /* Check for errors */
     assert(thread);
