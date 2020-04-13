@@ -26,7 +26,6 @@ struct ThreadMutex;
 /**
  * Required typedefs
  */
-typedef enum ThreadReturn ThreadReturn;
 typedef struct Thread *Thread;
 typedef struct ThreadSpinLock *ThreadSpinLock;
 typedef struct ThreadMutex *ThreadMutex;

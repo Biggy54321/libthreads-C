@@ -14,8 +14,6 @@
  */
 int thread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
 
-    Thread thread;
-
     /* Set the signal mask */
     sigprocmask(how, set, oldset);
 

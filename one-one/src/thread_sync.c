@@ -54,8 +54,8 @@ int thread_spin_lock(ThreadSpinLock *spinlock) {
     Thread thread;
 
     /* Check for errors */
-    if ((spinlock) ||           /* Pointer to spinlock is valid */
-        (*spinlock)) {          /* The argument points to a structure */
+    if (!(spinlock) ||           /* Pointer to spinlock is valid */
+        !(*spinlock)) {          /* The argument points to a structure */
 
         /* Set the errno */
         thread_errno = EINVAL;
@@ -93,8 +93,8 @@ int thread_spin_unlock(ThreadSpinLock *spinlock) {
     Thread thread;
 
     /* Check for errors */
-    if ((spinlock) ||           /* Pointer to spinlock is valid */
-        (*spinlock)) {          /* The argument points to a structure */
+    if (!(spinlock) ||           /* Pointer to spinlock is valid */
+        !(*spinlock)) {          /* The argument points to a structure */
 
         /* Set the errno */
         thread_errno = EINVAL;
@@ -133,8 +133,8 @@ int thread_spin_unlock(ThreadSpinLock *spinlock) {
 int thread_spin_destroy(ThreadSpinLock *spinlock) {
 
     /* Check for errors */
-    if ((spinlock) ||           /* Pointer to spinlock is valid */
-        (*spinlock)) {          /* The argument points to a structure */
+    if (!(spinlock) ||           /* Pointer to spinlock is valid */
+        !(*spinlock)) {          /* The argument points to a structure */
 
         /* Set the errno */
         thread_errno = EINVAL;
@@ -199,8 +199,8 @@ int thread_mutex_lock(ThreadMutex *mutex) {
     Thread thread;
 
     /* Check for errors */
-    if ((mutex) ||           /* Pointer to mutex is valid */
-        (*mutex)) {          /* The argument points to a structure */
+    if (!(mutex) ||           /* Pointer to mutex is valid */
+        !(*mutex)) {          /* The argument points to a structure */
 
         /* Set the errno */
         thread_errno = EINVAL;
@@ -249,8 +249,8 @@ int thread_mutex_unlock(ThreadMutex *mutex) {
     Thread thread;
 
     /* Check for errors */
-    if ((mutex) ||           /* Pointer to mutex is valid */
-        (*mutex)) {          /* The argument points to a structure */
+    if (!(mutex) ||           /* Pointer to mutex is valid */
+        !(*mutex)) {          /* The argument points to a structure */
 
         /* Set the errno */
         thread_errno = EINVAL;
@@ -292,8 +292,8 @@ int thread_mutex_unlock(ThreadMutex *mutex) {
 int thread_mutex_destroy(ThreadMutex *mutex) {
 
     /* Check for errors */
-    if ((mutex) ||           /* Pointer to mutex is valid */
-        (*mutex)) {          /* The argument points to a structure */
+    if (!(mutex) ||           /* Pointer to mutex is valid */
+        !(*mutex)) {          /* The argument points to a structure */
 
         /* Set the errno */
         thread_errno = EINVAL;

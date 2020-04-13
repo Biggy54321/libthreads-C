@@ -2,6 +2,7 @@
 #define _THREAD_SYNC_H_
 
 #include "./mods/utils.h"
+#include "./mods/list.h"
 #include "./mods/lock.h"
 #include "./thread.h"
 
@@ -60,8 +61,11 @@ struct ThreadMutex {
     /* Owner thread */
     Thread owner;
 
+    /* Linked list of waiting threads */
+    List waitll;
+
     /* Lock word */
-    int lock;
+    Lock lock;
 };
 
 /**

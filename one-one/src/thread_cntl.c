@@ -20,6 +20,8 @@ static int _one_one_start(void *arg) {
 
     /* Set the state as exited */
     td_set_state(thread, THREAD_STATE_EXITED);
+
+    return 0;
 }
 
 /**
