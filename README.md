@@ -400,13 +400,16 @@ The library can be used on 64 bit systems only, as it uses a hardware feature wh
         $> ./test.sh <library_name> <module_name> <cmd_args>
     ```
 
-    * For example, the following command will run the test code for mutexex in one-one library (for one-one library the third argument is not needed).
+    * For example, the following command will run the test code for mutexes in one-one library (for one-one library the third argument is not needed).
 
     ```
         $> ./test.sh one-one mutex
         Thread mutex testing
 
-        Test 1: Create three threads, where each thread runs for some number of iterations. Each thread updates a variable local to itself and each         of the thread also updates a variable which is shared amongst all. However the race on the shared variable is not handled in this case
+        Test 1: Create three threads, where each thread runs for some number
+        of iterations. Each thread updates a variable local to itself and each
+        of the thread also updates a variable which is shared amongst all.
+        However the race on the shared variable is not handled in this case
         Debug: Set cnt, cnt1, cnt2 and cnt3 all to zero
         Debug: thread_main() created three threads
         Debug: thread_main() called join on the threads
@@ -417,7 +420,11 @@ The library can be used on 64 bit systems only, as it uses a hardware feature wh
         Debug: The globals are not consistent
         Test 1: Succeeded
 
-        Test 2: Create three threads, where each thread runs for some number of iterations. Each thread updates a variable local to itself and each         of the thread also updates a variable which is shared amongst all. The race on the shared variable is handled in this case using mutexes
+        Test 2: Create three threads, where each thread runs for some number
+        of iterations. Each thread updates a variable local to itself and
+        each of the thread also updates a variable which is shared amongst
+        all. The race on the shared variable is handled in this case using
+        mutexes
         Debug: Set cnt, cnt1, cnt2 and cnt3 all to zero
         Debug: thread_main() initialized mutex
         Debug: thread_main() created three threads
