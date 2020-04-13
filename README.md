@@ -458,3 +458,5 @@ The library can be used on 64 bit systems only, as it uses a hardware feature wh
         Debug: thread_main() did not receive SIGUSR2 sent by thread2()
         Test 2: Succeeded
     ```
+
+    * Sometimes the debug prints can be very irritating, hence to block all the debug prints in the test code output, open the **test.sh** file and uncomment the line **GCC_COMPILATION_FLAGS="-DBLOCK_DEBUG_PRINTS"**, which will block all the prints with **Debug:** prefix.

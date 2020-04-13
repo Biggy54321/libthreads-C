@@ -1,5 +1,8 @@
 #!/bin/zsh
 
+# Gcc compilation flags
+# GCC_COMPILATION_FLAGS="-DBLOCK_DEBUG_PRINTS"
+
 # If the command line argument is only one
 if [ $# -eq 1 ]
 then
@@ -54,7 +57,7 @@ fi
 if [[ " ${VALID_SECOND_CMD_ARG[*]} " == *"$2"* ]];
 then
     # Compile the test code for that module
-    gcc $TEST_SRC_PATH/test_$2.c $TEST_SRC_PATH/print.c -lthread
+    gcc $TEST_SRC_PATH/test_$2.c $TEST_SRC_PATH/print.c $GCC_COMPILATION_FLAGS -lthread
     # Run the executable
     ./a.out $3
 else
