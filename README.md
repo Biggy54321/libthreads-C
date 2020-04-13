@@ -300,6 +300,71 @@ int thread_kill(Thread Thread, int signo);
 
 ## Usage
 
-* The library provides a dynamically linked and statically linked libraries with name **libthread.so** and **libthread.a** respectively. These libraries can be installed using the script given in the **build** directory of each library. The **install.sh** script will install the library in the host system.
-* The application program has to include the file **thread.h** and compile the program using **-lthread** option.
-* In case of many-many and hybrid threading libraries, the application program will take one command line argument, which would specify the number of kernel threads to be allocated for the many-many user threads. If the user does not specify the argument, then by default **one** kernel thread is allocated for scheduling the many-many threads in both the libraries.
+* Each three libraries are organized into three directories respectively.
+* Each directory has three directories:
+
+    * **src**: Which contains the source code
+    * **build**: Which contains some scripts required to build the library
+    * **bin**: Which contains the compilation binary metadata and results
+* There are two scripts in the **build** directory:
+
+    * **install.sh**: Which is used to install the library in the host system
+    * **clean.sh**: Which is used to uninstall the library from the host system
+
+* To build the library perform the following steps:
+
+    * Navigate to the **build** directory of the required library.
+    * Give executable permissions to both the scripts by the command:
+
+    ```
+        ?> chmod +x *.sh
+    ```
+
+    * Compile and install the library by the command:
+
+    ```
+        ?> ./install.sh
+    ```
+
+    * To uninstall the library run the command:
+
+    ```
+        ?> ./clean.sh
+    ```
+
+* To use the library in the application program:
+
+    * Include the libthreads-C header file as shown below in the application program source code:
+
+    ```
+    #include <thread.h>
+    ```
+
+    * Implement the the **thread_main()** routine in the application program instead of **main()** routine:
+
+    ```
+    void *thread_main(void *arg) {
+
+        /* This function will be the starting function of the application */
+
+        ...
+
+        return NULL;
+    }
+    ```
+
+    * While compiling the application use the following command:
+
+    ```
+    ?> gcc <options> <source_files> -lthread
+    ```
+
+* While executing the program, in case of **many-many** and **hybrid** libraries, the application will take one command line argument. This argument specifies the **number of kernel threads** to be allocated for scheduling the many-many mapped user threads. If the user does not specify any command line argument then by default the library allocates **one** kernel thread for scheduling the many-many threads in both the libraries.
+
+```
+    $> # For one-one library
+    $> ./a.out
+    $>
+    $> # For many-many and hybrid library
+    $> ./a.out <number_of_kernel_threads>
+```

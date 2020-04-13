@@ -51,7 +51,6 @@ ListMember *do_list_dequeue(List *list);
  */
 #define list_enqueue(list, new, mem)                \
     {                                               \
-        assert((list));                             \
         assert((new));                              \
                                                     \
         do_list_enqueue((list), &(new)->mem);       \
@@ -67,7 +66,6 @@ ListMember *do_list_dequeue(List *list);
  */
 #define list_dequeue(list, type, mem)                           \
     ({                                                          \
-        assert((list));                                         \
         assert((list)->head);                                   \
                                                                 \
         int _offset = offsetof(type, mem);                      \
