@@ -300,7 +300,7 @@ int thread_kill(Thread Thread, int signo);
 
 ## Usage
 
-* Each three libraries are organized into three directories respectively.
+* The three libraries are organized into three directories respectively.
 * Each directory has three directories:
 
     * **src**: Which contains the source code
@@ -317,19 +317,19 @@ int thread_kill(Thread Thread, int signo);
     * Give executable permissions to both the scripts by the command:
 
     ```
-        ?> chmod +x *.sh
+        $> chmod +x *.sh
     ```
 
     * Compile and install the library by the command:
 
     ```
-        ?> ./install.sh
+        $> ./install.sh
     ```
 
     * To uninstall the library run the command:
 
     ```
-        ?> ./clean.sh
+        $> ./clean.sh
     ```
 
 * To use the library in the application program:
@@ -356,7 +356,7 @@ int thread_kill(Thread Thread, int signo);
     * While compiling the application use the following command:
 
     ```
-    ?> gcc <options> <source_files> -lthread
+    $> gcc <options> <source_files> -lthread
     ```
 
 * While executing the program, in case of **many-many** and **hybrid** libraries, the application will take one command line argument. This argument specifies the **number of kernel threads** to be allocated for scheduling the many-many mapped user threads. If the user does not specify any command line argument then by default the library allocates **one** kernel thread for scheduling the many-many threads in both the libraries.
