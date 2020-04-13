@@ -1,11 +1,5 @@
 #!/bin/zsh
 
-# Set the list of valid first command line arguments
-VALID_FIRST_CMD_ARG=("one-one" "many-many" "hybrid")
-
-# Set the list of valid second command line arguments
-VALID_SECOND_CMD_ARG=("create" "exit" "join" "spinlock" "mutex" "signal" "yield")
-
 # If the command line argument is only one
 if [ $# -eq 1 ]
 then
@@ -29,6 +23,9 @@ then
     exit
 fi
 
+# Set the list of valid first command line arguments
+VALID_FIRST_CMD_ARG=("one-one" "many-many" "hybrid")
+
 # Install the requested library on the host system
 if [[ " ${VALID_FIRST_CMD_ARG[*]} " == *"$1"* ]];
 then
@@ -44,8 +41,13 @@ fi
 if [[ $1 == "hybrid" ]]
 then
     TEST_SRC_PATH="./tests_hybrid"
+    # Set the list of valid second command line arguments
+    VALID_SECOND_CMD_ARG=("create" "exit" "join" "spinlock" "signal" "yield")
+
 else
-    TEST_SRC_PATH="./tests_one_many/"
+    TEST_SRC_PATH="./tests_one_many"
+    # Set the list of valid second command line arguments
+    VALID_SECOND_CMD_ARG=("create" "exit" "join" "spinlock" "mutex" "signal" "yield")
 fi
 
 # Run the test code of the requested module

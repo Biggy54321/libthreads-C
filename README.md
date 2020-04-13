@@ -94,6 +94,7 @@ int thread_join(Thread thread, void **ret);
 * This function causes the calling thread to wait for the specified target thread **thread** to finish its execution.
 * The return status of the target thread is fetched and stored at the location pointed by the argument **ret**.
 * It is a blocking call and will return only after the target thread finishes.
+* Any thread can join with any other thread.
 * On success returns **THREAD_SUCCESS**.
 * On failure returns **THREAD_FAIL** and sets **thread_errno** to:
 
@@ -289,7 +290,7 @@ int thread_kill(Thread Thread, int signo);
 
     * *EINVAL*: If thread argument is invalid or signal number is invalid
 
-## TODO(s)
+## Todo(s)
 
 * Adding a finer control on the thread **properties** while creating a user thread. This includes setting the **stack size**, **stack guard size** and **priority** for the user thread.
 * Changing the **scheduling policy** of **many-many** threads from FIFO to priority based preemptive policy.
@@ -297,6 +298,10 @@ int thread_kill(Thread Thread, int signo);
 * Implementing **thread-specific-storage** which allows the global objects hold data specific to each user thread.
 * Implementing **wrappers** for the **system calls**, as using **glibc** wrappers causes the library to crash. Implementing the wrappers compatible with our library will allow us to introduce **thread cancellation** to the library.
 * Improving the **error checking** of the library. Currently no error checking is done in the utilities used by the library. The errors are asserted in the utility routines.
+
+## Note
+
+The library can be used on 64 bit systems only, as it uses a hardware feature which is specific to 64 bit systems.
 
 ## Usage
 
@@ -368,3 +373,81 @@ int thread_kill(Thread Thread, int signo);
     $> # For many-many and hybrid library
     $> ./a.out <number_of_kernel_threads>
 ```
+
+## Test code
+
+* This repository provides some test codes implementing the library routines.
+* This test code is located in the **test** directory.
+* The **test** directory has a script named **test.sh** which can be used to test a module of any of the three libraries.
+* For testing a module of a library perform the following:
+
+    * Navigate to the **test** directory.
+    * Give executable permissions to the script by the command:
+
+    ```
+        $> chmod +x ./test.sh
+    ```
+
+    * Run the script with help option to get to know the possible options:
+
+    ```
+        $> ./test.sh help
+    ```
+
+    * The general usage of the script is is given by:
+
+    ```
+        $> ./test.sh <library_name> <module_name> <cmd_args>
+    ```
+
+    * For example, the following command will run the test code for mutexex in one-one library (for one-one library the third argument is not needed).
+
+    ```
+        $> ./test.sh one-one mutex
+        Thread mutex testing
+
+        Test 1: Create three threads, where each thread runs for some number of iterations. Each thread updates a variable local to itself and each         of the thread also updates a variable which is shared amongst all. However the race on the shared variable is not handled in this case
+        Debug: Set cnt, cnt1, cnt2 and cnt3 all to zero
+        Debug: thread_main() created three threads
+        Debug: thread_main() called join on the threads
+        Debug: cnt = 122265
+        Debug: cnt1 = 100000
+        Debug: cnt2 = 100000
+        Debug: cnt3 = 100000
+        Debug: The globals are not consistent
+        Test 1: Succeeded
+
+        Test 2: Create three threads, where each thread runs for some number of iterations. Each thread updates a variable local to itself and each         of the thread also updates a variable which is shared amongst all. The race on the shared variable is handled in this case using mutexes
+        Debug: Set cnt, cnt1, cnt2 and cnt3 all to zero
+        Debug: thread_main() initialized mutex
+        Debug: thread_main() created three threads
+        Debug: thread_main() called join on the threads
+        Debug: thread_main() deinitialized mutex
+        Debug: cnt = 300000
+        Debug: cnt1 = 100000
+        Debug: cnt2 = 100000
+        Debug: cnt3 = 100000
+        Debug: The globals are consistent
+        Test 2: Succeeded
+    ```
+
+    * Another example for many-many library can be to test the signal handling functions with four kernel threads.
+
+    ```
+        $> ./test.sh many-many signal 4
+        Thread signal handling testing
+
+        Test 1: Sending a signal to an infinitely sleeping thread
+        Debug: thread_main() created thread1()
+        Debug: In thread1(), waiting for signal
+        Debug: thread_main() sent SIGUSR1 to thread1()
+        Debug: thread_main() called join on thread1()
+        Debug: In SIGUSR1 handler, exiting from the thread
+        Test 1: Succeeded
+
+        Test 2: Blocking a signal in a thread whose handler may cause infinite wait of the target thread
+        Debug: thread_main() created thread2()
+        Debug: In thread2(), sending SIGUSR2 to thread_main()
+        Debug: thread_main() did not receive SIGUSR2 sent by thread2()
+        Test 2: Succeeded
+    ```

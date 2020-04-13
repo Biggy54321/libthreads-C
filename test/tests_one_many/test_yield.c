@@ -27,6 +27,15 @@ void *thread_main(void *arg) {
 
     Thread td;
 
+    /* Print information */
+    print_str("Thread yield testing\n\n");
+
+    /* Test */
+    print_str("Test: Here thread_main() creates thread(). thread_main() waits "
+              "for thread() initially, thread() yields during its execution "
+              "and after thread() joins with thread_main(), thread_main() "
+              "itself yields\n");
+
     /* Create a user thread */
     debug_str("thread_main() created thread()\n");
     thread_create(&td, thread, NULL);
