@@ -97,8 +97,8 @@ void *thread_main(void *arg) {
     /* Test 1 */
     print_str("Test 1: Sending a signal to an infinitely sleeping thread\n");
     /* Create thread */
-    debug_str("thread_main() created thread1()\n");
-    thread_create(&td1, thread1, NULL);
+    debug_str("thread_main() created thread1() as many many thread\n");
+    thread_create(&td1, thread1, NULL, THREAD_TYPE_MANY_MANY);
     /* Add delay */
     DELAY();
     /* Send signal to the thread */
@@ -127,8 +127,8 @@ void *thread_main(void *arg) {
     sigaddset(&block_set, SIGUSR2);
     thread_sigmask(SIG_BLOCK, &block_set, NULL);
     /* Create a thread */
-    debug_str("thread_main() created thread2()\n");
-    thread_create(&td2, thread2, &td_me);
+    debug_str("thread_main() created thread2() as one one thread\n");
+    thread_create(&td2, thread2, &td_me, THREAD_TYPE_ONE_ONE);
     /* Join with the thread */
     thread_join(td2, NULL);
     /* Print information */

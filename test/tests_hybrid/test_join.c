@@ -119,17 +119,17 @@ void *thread_main(void *main_arg) {
 
     Thread td1, td2, td3, td_me;
 
-    /* Get the thread descriptor */
-    td_me = thread_self();
-
     /* Print information */
     print_str("Thread join testing\n\n");
+
+    /* Get the thread object */
+    td_me = thread_self();
 
     /* Test 1 */
     print_str("Test 1: Join with valid arguments and no deadlock scenarios\n");
     /* Create the thread */
-    debug_str("thread_main() created thread1()\n");
-    thread_create(&td1, thread1, NULL);
+    debug_str("thread_main() created thread1() as one one thread\n");
+    thread_create(&td1, thread1, NULL, THREAD_TYPE_ONE_ONE);
     /* Join with the thread */
     debug_str("thread_main() called join on thread1()\n");
     if (thread_join(td1, NULL) == THREAD_SUCCESS) {
@@ -148,8 +148,8 @@ void *thread_main(void *main_arg) {
     /* Test 2 */
     print_str("Test 2: Join with invalid thread descriptor\n");
     /* Create the thread */
-    debug_str("thread_main() created thread1()\n");
-    thread_create(&td1, thread1, NULL);
+    debug_str("thread_main() created thread1() as many many thread\n");
+    thread_create(&td1, thread1, NULL, THREAD_TYPE_MANY_MANY);
     /* Join with thread */
     debug_str("thread_main() called join on NULL thread\n");
     if (thread_join(NULL, NULL) == THREAD_SUCCESS) {
@@ -180,8 +180,8 @@ void *thread_main(void *main_arg) {
     print_str("Test 3: Join with already joined thread (this may also give "
               "undefined results)\n");
     /* Create the thread */
-    debug_str("thread_main() created thread1()\n");
-    thread_create(&td1, thread1, NULL);
+    debug_str("thread_main() created thread1() as one one thread\n");
+    thread_create(&td1, thread1, NULL, THREAD_TYPE_ONE_ONE);
     /* Join with the thread */
     debug_str("thread_main() called join on thread1() first time\n");
     thread_join(td1, NULL);
@@ -213,11 +213,11 @@ void *thread_main(void *main_arg) {
     print_str("Test 4: Join with a thread for which another thread is "
               "already waiting\n");
     /* Create a target thread */
-    debug_str("thread_main() created thread1()\n");
-    thread_create(&td1, thread1, NULL);
+    debug_str("thread_main() created thread1() as many many thread\n");
+    thread_create(&td1, thread1, NULL, THREAD_TYPE_MANY_MANY);
     /* Create another thread which will wait on the target thread */
-    debug_str("thread_main() created thread2()\n");
-    thread_create(&td2, thread2, &td1);
+    debug_str("thread_main() created thread2() as many many thread\n");
+    thread_create(&td2, thread2, &td1, THREAD_TYPE_MANY_MANY);
     /* Join with the target thread */
     debug_str("thread_main() called join on thread1()\n");
     thread_join(td1, NULL);
@@ -254,11 +254,13 @@ void *thread_main(void *main_arg) {
     /* Test 6 */
     print_str("Test 6: Mutual join between the caller and target thread\n");
     /* Create the thread */
-    debug_str("thread_main() created thread3()\n");
-    thread_create(&td3, thread3, &td_me);
+    debug_str("thread_main() created thread3() as one one thread\n");
+    thread_create(&td3, thread3, &td_me, THREAD_TYPE_ONE_ONE);
     /* Call join */
     debug_str("thread_main() called join on thread3()\n");
     thread_join(td3, NULL);
+
+    newline;
 
     return NULL;
 }

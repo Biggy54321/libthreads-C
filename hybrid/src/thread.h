@@ -65,6 +65,7 @@ ptr_t thread_main(ptr_t arg);
  */
 int thread_spin_init(ThreadSpinLock *spinlock);
 int thread_spin_lock(ThreadSpinLock *spinlock);
+int thread_spin_trylock(ThreadSpinLock *spinlock);
 int thread_spin_unlock(ThreadSpinLock *spinlock);
 int thread_spin_destroy(ThreadSpinLock *spinlock);
 

@@ -45,12 +45,12 @@ if [[ $1 == "hybrid" ]]
 then
     TEST_SRC_PATH="./tests_hybrid"
     # Set the list of valid second command line arguments
-    VALID_SECOND_CMD_ARG=("create" "exit" "join" "spinlock" "signal" "yield")
+    VALID_SECOND_CMD_ARG=("create" "exit" "join" "spinlock" "signal" "yield" "equal")
 
 else
     TEST_SRC_PATH="./tests_one_many"
     # Set the list of valid second command line arguments
-    VALID_SECOND_CMD_ARG=("create" "exit" "join" "spinlock" "mutex" "signal" "yield")
+    VALID_SECOND_CMD_ARG=("create" "exit" "join" "spinlock" "mutex" "signal" "yield" "equal")
 fi
 
 # Run the test code of the requested module

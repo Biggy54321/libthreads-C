@@ -4,7 +4,7 @@
 #include <thread.h>
 
 /* Number of increments */
-#define NB_INCRS (100000u)
+#define NB_INCRS (10000u)
 
 /* Mutex object */
 ThreadMutex mtx;
@@ -109,11 +109,41 @@ void *thread3(void *arg) {
 }
 
 /**
+ * User thread 4
+ */
+void *thread4(void *arg) {
+
+    /* Print information */
+    debug_str("thread4() tried to acquire the mutex owned by thread_main()\n");
+    if (thread_mutex_trylock(&mtx) == THREAD_SUCCESS) {
+
+        /* Print information */
+        print_fail(5);
+    } else {
+
+        /* Check the error number */
+        if (thread_errno == EBUSY) {
+
+            /* Print information */
+            debug_str("thread4() failed to try to acquire the mutex with "
+                      "error number EBUSY\n");
+            print_succ(5);
+        } else {
+
+            /* Print information */
+            print_fail(5);
+        }
+    }
+
+    return NULL;
+}
+
+/**
  * Main thread
  */
 void *thread_main(void *arg) {
 
-    Thread td1, td2, td3;
+    Thread td1, td2, td3, td4;
 
     /* Print information */
     print_str("Thread mutex testing\n\n");
@@ -200,6 +230,84 @@ void *thread_main(void *arg) {
         debug_str("The globals are consistent\n");
         print_succ(2);
     }
+
+    newline;
+
+    /* Test 3 */
+    print_str("Test 3: Acquire an already owned mutex\n");
+    debug_str("thread_main() initialized mutex\n");
+    thread_mutex_init(&mtx);
+    debug_str("thread_main() acquired mutex\n");
+    thread_mutex_lock(&mtx);
+    debug_str("thread_main() tried to acquire the same mutex again\n");
+    if (thread_mutex_lock(&mtx) == THREAD_SUCCESS) {
+
+        /* Print information */
+        debug_str("thread_main() reacquired the lock\n");
+        debug_str("thread_main() released mutex\n");
+        thread_mutex_unlock(&mtx);
+        debug_str("thread_main() deinitialized mutex\n");
+        thread_mutex_destroy(&mtx);
+        print_succ(3);
+    } else {
+
+        /* Print information */
+        debug_str("thread_main() failed to reacquire the lock\n");
+        debug_str("thread_main() released mutex\n");
+        thread_mutex_unlock(&mtx);
+        debug_str("thread_main() deinitialized mutex\n");
+        thread_mutex_destroy(&mtx);
+        print_fail(2);
+    }
+
+    newline;
+
+    /* Test 4 */
+    print_str("Test 4: Release mutex which is not owned\n");
+    debug_str("thread_main() initialized mutex\n");
+    thread_mutex_init(&mtx);
+    debug_str("thread_main() tried to unlock a mutex which was not locked\n");
+    if (thread_mutex_unlock(&mtx) == THREAD_SUCCESS) {
+
+        /* Print information */
+        print_fail(4);
+    } else {
+
+        /* Check the error number */
+        if (thread_errno == EACCES) {
+
+            /* Print information */
+            debug_str("thread_main() failed to unlock the mutex with "
+                      "error number EACCES\n");
+            debug_str("thread_main() deinitialized mutex\n");
+            thread_mutex_destroy(&mtx);
+            print_succ(4);
+        } else {
+
+            /* Print information */
+            debug_str("thread_main() deinitialized mutex\n");
+            thread_mutex_destroy(&mtx);
+            print_fail(4);
+        }
+    }
+
+    newline;
+
+    /* Test 5 */
+    print_str("Test 5: Try to acquire an already acquired mutex by other "
+              "thread\n");
+    debug_str("thread_main() initialized mutex\n");
+    thread_mutex_init(&mtx);
+    debug_str("thread_main() acquired mutex\n");
+    thread_mutex_lock(&mtx);
+    debug_str("thread_main() created thread4()\n");
+    thread_create(&td4, thread4, NULL);
+    debug_str("thread_main() called join on thread4()\n");
+    thread_join(td4, NULL);
+    debug_str("thread_main() released mutex\n");
+    thread_mutex_unlock(&mtx);
+    debug_str("thread_main() deinitialized mutex\n");
+    thread_mutex_destroy(&mtx);
 
     return NULL;
 }

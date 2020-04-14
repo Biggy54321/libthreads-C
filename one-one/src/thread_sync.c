@@ -317,7 +317,7 @@ int thread_mutex_trylock(ThreadMutex *mutex) {
     if (!mut_acq_lock(*mutex)) {
 
         /* Set the errno */
-        thread_errno = EACCES;
+        thread_errno = EBUSY;
         /* Return failure */
         return THREAD_FAIL;
     }

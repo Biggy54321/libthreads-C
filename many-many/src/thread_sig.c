@@ -59,6 +59,9 @@ int thread_kill(Thread thread, int signo) {
         return THREAD_FAIL;
     }
 
+    /* Disable interrupts */
+    td_disable_intr(thread);
+
     /* Acquire the member lock */
     td_lock(thread);
 
@@ -67,6 +70,9 @@ int thread_kill(Thread thread, int signo) {
 
     /* Release the member lock */
     td_unlock(thread);
+
+    /* Disable interrupts */
+    td_enable_intr(thread);
 
     return THREAD_SUCCESS;
 }

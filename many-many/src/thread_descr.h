@@ -110,7 +110,7 @@ struct Thread {
 /**
  * Thread descriptor launch
  */
-#define td_launch(thread) ((thread)->ret = (thread)->start(thread->arg))
+#define td_launch(thread) ((thread)->ret = (thread)->start((thread)->arg))
 
 /**
  * Thread descriptor return value handling

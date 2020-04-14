@@ -133,7 +133,7 @@ int thread_create(Thread *thread, thread_start_t start, ptr_t arg, int type) {
     if (type == THREAD_TYPE_ONE_ONE) {
 
         /* Allocate the thread */
-        *thread = td_oo_alloc();
+        (*thread) = td_oo_alloc();
 
         /* Check for errors */
         if (!(*thread)) {
@@ -162,7 +162,7 @@ int thread_create(Thread *thread, thread_start_t start, ptr_t arg, int type) {
     } else {
 
         /* Allocate the thread */
-        *thread = td_mm_alloc();
+        (*thread) = td_mm_alloc();
 
         /* Check for errors */
         if (!(*thread)) {

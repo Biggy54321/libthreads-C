@@ -427,7 +427,7 @@ The library can be used on 64 bit systems only, as it uses a hardware feature wh
         $> chmod +x ./test.sh
     ```
 
-    * Run the script with help option to get to know the possible options:
+    * Run the script with **help** option to get to know the possible options:
 
     ```
         $> ./test.sh help

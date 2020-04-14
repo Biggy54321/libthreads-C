@@ -46,6 +46,9 @@ struct Thread {
     /* Thread state */
     int state;
 
+    /* Wait word */
+    int wait;
+
     /* Start routine */
     thread_start_t start;
 
@@ -57,9 +60,6 @@ struct Thread {
 
     /* Stack canary */
     ptr_t __stack_canary;
-
-    /* Wait word */
-    int wait;
 
     /* Error number */
     int error;
@@ -129,7 +129,7 @@ struct Thread {
 /**
  * Thread descriptor launch
  */
-#define td_launch(thread) ((thread)->ret = (thread)->start(thread->arg))
+#define td_launch(thread) ((thread)->ret = (thread)->start((thread)->arg))
 
 /**
  * Thread descriptor return value handling

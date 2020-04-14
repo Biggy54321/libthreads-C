@@ -55,6 +55,8 @@ int thread_sigmask(int how, sigset_t *set, sigset_t *oldset) {
  */
 int thread_kill(Thread thread, int signo) {
 
+    Thread curr_thread;
+
     /* Check for errors */
     if ((!thread) ||            /* Thread descriptor is invalid */
         (signo < _SIG_LOW) ||   /* Signal number is below range */
@@ -66,12 +68,22 @@ int thread_kill(Thread thread, int signo) {
         return THREAD_FAIL;
     }
 
+    /* Get the thread handle */
+    curr_thread = thread_self();
+
     /* If the thread is one one */
     if (td_is_one_one(thread)) {
 
         /* Send the signal to the target thread */
         sig_send(td_oo_get_ktid(thread), signo);
+
     } else {
+
+        /* Disable interrupts if many many thread */
+        if (td_is_many_many(curr_thread)) {
+
+            td_mm_disable_intr(curr_thread);
+        }
 
         /* Acquire the member lock */
         td_lock(thread);
@@ -81,6 +93,12 @@ int thread_kill(Thread thread, int signo) {
 
         /* Release the member lock */
         td_unlock(thread);
+
+        /* Enable interrupts if many many thread */
+        if (td_is_many_many(curr_thread)) {
+
+            td_mm_enable_intr(curr_thread);
+        }
     }
 
     return THREAD_SUCCESS;
