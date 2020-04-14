@@ -260,7 +260,5 @@ void *thread_main(void *main_arg) {
     debug_str("thread_main() called join on thread3()\n");
     thread_join(td3, NULL);
 
-    newline;
-
     return NULL;
 }

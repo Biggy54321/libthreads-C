@@ -141,12 +141,17 @@ int thread_join(Thread thread, ptr_t *ret) {
         return THREAD_FAIL;
     }
 
+    /* Disable interrupts */
+    td_disable_intr(curr_thread);
+
     /* Acquire the member lock */
     td_lock(thread);
 
     /* Check if the thread already has another joining thread */
     if (td_has_joining(thread)) {
 
+        /* Enable the interrupts */
+        td_enable_intr(curr_thread);
         /* Release the member lock */
         td_unlock(thread);
         /* Set the errno */
@@ -154,9 +159,6 @@ int thread_join(Thread thread, ptr_t *ret) {
         /* Return failure */
         return THREAD_FAIL;
     }
-
-    /* Disable interrupts */
-    td_disable_intr(curr_thread);
 
     /* Set the joining thread */
     td_set_joining(thread, curr_thread);

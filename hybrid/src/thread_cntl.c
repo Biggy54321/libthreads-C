@@ -228,25 +228,31 @@ int thread_join(Thread thread, ptr_t *ret) {
         return THREAD_FAIL;
     }
 
+    /* If the current thread type is many many */
+    if (td_is_many_many(curr_thread)) {
+
+        /* Disable the interrupts */
+        td_mm_disable_intr(curr_thread);
+    }
+
     /* Acquire the member lock */
     td_lock(thread);
 
     /* Check if the thread already has another joining thread */
     if (td_has_join_thread(thread)) {
 
+        /* If the current thread type is many many */
+        if (td_is_many_many(curr_thread)) {
+
+            /* Disable the interrupts */
+            td_mm_enable_intr(curr_thread);
+        }
         /* Release the member lock */
         td_unlock(thread);
         /* Set the errno */
         thread_errno = EINVAL;
         /* Return failure */
         return THREAD_FAIL;
-    }
-
-    /* If the current thread type is many many */
-    if (td_is_many_many(curr_thread)) {
-
-        /* Disable the interrupts */
-        td_mm_disable_intr(curr_thread);
     }
 
     /* Set the joining thread */
