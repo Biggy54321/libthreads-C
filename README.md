@@ -187,6 +187,7 @@ int thread_spin_lock(ThreadSpinLock *spinlock);
 #### Spinlock try to acquire
 
 ```
+/* Try to acquire the spinlock */
 int thread_spin_trylock(ThreadSpinLock *spinlock);
 ```
 
@@ -260,7 +261,8 @@ int thread_mutex_lock(ThreadMutex *mutex);
 #### Mutex try to acquire
 
 ```
-int thread_mutex_trylock(ThreadMutex *spinlock);
+/* Try to acquire the mutex */
+int thread_mutex_trylock(ThreadMutex *mutex);
 ```
 
 * This function tries to acquire the mutex pointed by **mutex** argument.
