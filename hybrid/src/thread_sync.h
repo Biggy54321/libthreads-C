@@ -13,16 +13,24 @@ struct ThreadSpinLock {
     Thread owner;
 
     /* Lock word */
-    Lock lock;
+    int lock;
 };
+
+/**
+ * Spinlock statuses
+*/
+#define SPINLOCK_ACQUIRED      (0u)
+#define SPINLOCK_NOT_ACQUIRED  (1u)
 
 /**
  * Spinlock members handling
  */
 #define spin_set_owner(spin, thread) ((spin)->owner = (thread))
 #define spin_get_owner(spin)         ((spin)->owner)
-#define spin_acq_lock(spin)          (lock_acquire(&(spin)->lock))
-#define spin_rel_lock(spin)          (lock_release(&(spin)->lock))
+#define spin_acq_lock(spin)                                             \
+    (atomic_cas(&(spin)->lock, SPINLOCK_NOT_ACQUIRED, SPINLOCK_ACQUIRED))
+#define spin_rel_lock(spin)                                             \
+    (atomic_cas(&(spin)->lock, SPINLOCK_ACQUIRED, SPINLOCK_NOT_ACQUIRED))
 #define spin_alloc()                                \
     ({                                              \
         ThreadSpinLock __spin;                      \
@@ -39,7 +47,7 @@ struct ThreadSpinLock {
         (spin)->owner = NULL;                   \
                                                 \
         /* Initialize the lock word */          \
-        lock_init(&(spin)->lock);               \
+        (spin)->lock = SPINLOCK_NOT_ACQUIRED;   \
     }
 #define spin_free(spin)              (free(spin))
 

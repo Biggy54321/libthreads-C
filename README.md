@@ -184,6 +184,20 @@ int thread_spin_lock(ThreadSpinLock *spinlock);
 
     * *EINVAL*: If spinlock argument is invalid
 
+#### Spinlock try to acquire
+
+```
+int thread_spin_trylock(ThreadSpinLock *spinlock);
+```
+
+* This function tries to acquire the spinlock pointed by **spinlock** argument.
+* This function is **non-blocking**, i.e. it returns even if the spinlock is already acquired. If lock is not acquired by anyone then it acquires the lock and returns success, else it returns failure.
+* On success returns **THREAD_SUCCESS**.
+* One failure returns **THREAD_FAIL** and sets **thread_errno** to:
+
+    * *EINVAL*: If spinlock argument is invalid
+    * *EBUSY*: The lock is acquired by some other thread
+
 #### Spinlock release
 
 ```
@@ -242,6 +256,20 @@ int thread_mutex_lock(ThreadMutex *mutex);
 * On failure returns **THREAD_FAIL** and sets **thread_errno** to:
 
     * *EINVAL*: If mutex argument is invalid
+
+#### Mutex try to acquire
+
+```
+int thread_mutex_trylock(ThreadMutex *spinlock);
+```
+
+* This function tries to acquire the mutex pointed by **mutex** argument.
+* This function is **non-blocking**, i.e. it returns even if the mutex is already acquired. If lock is not acquired by anyone then it acquires the lock and returns success, else it returns failure.
+* On success returns **THREAD_SUCCESS**.
+* One failure returns **THREAD_FAIL** and sets **thread_errno** to:
+
+    * *EINVAL*: If mutex argument is invalid
+    * *EBUSY*: The lock is acquired by some other thread
 
 #### Mutex release
 

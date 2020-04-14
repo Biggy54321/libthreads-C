@@ -72,8 +72,54 @@ int thread_spin_lock(ThreadSpinLock *spinlock) {
         return THREAD_SUCCESS;
     }
 
+    /* While the lock is not acquired */
+    while (!spin_acq_lock(*spinlock));
+
+    /* Set the owner to the current thread */
+    spin_set_owner(*spinlock, thread);
+
+    return THREAD_SUCCESS;
+}
+
+/**
+ * @brief Tries to acquire the spinlock
+ *
+ * Acquires the spinlock if it is not acquired by any other thread. However if
+ * the thread is already acquired then the call does not block.
+ *
+ * @param[in] spinlock Pointer to the spinlock instance
+ */
+int thread_spin_trylock(ThreadSpinLock *spinlock) {
+
+    Thread thread;
+
+    /* Check for errors */
+    if (!(spinlock) ||           /* Pointer to spinlock is valid */
+        !(*spinlock)) {          /* The argument points to a structure */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
+
+    /* Get the thread handle */
+    thread = thread_self();
+
+    /* If the current thread is the owner */
+    if (spin_get_owner(*spinlock) == thread) {
+
+        return THREAD_SUCCESS;
+    }
+
     /* Acquire the lock */
-    spin_acq_lock(*spinlock);
+    if (!spin_acq_lock(*spinlock)) {
+
+        /* Set the errno */
+        thread_errno = EBUSY;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
 
     /* Set the owner to the current thread */
     spin_set_owner(*spinlock, thread);
