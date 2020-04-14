@@ -50,6 +50,7 @@ int thread_join(Thread thread, ptr_t *ret);
 void thread_exit(ptr_t ret);
 Thread thread_self(void);
 int thread_yield(void);
+int thread_equal(Thread thread1, Thread thread2);
 ptr_t thread_main(ptr_t arg);
 
 /**
@@ -57,10 +58,12 @@ ptr_t thread_main(ptr_t arg);
  */
 int thread_spin_init(ThreadSpinLock *spinlock);
 int thread_spin_lock(ThreadSpinLock *spinlock);
+int thread_spin_trylock(ThreadSpinLock *spinlock);
 int thread_spin_unlock(ThreadSpinLock *spinlock);
 int thread_spin_destroy(ThreadSpinLock *spinlock);
 int thread_mutex_init(ThreadMutex *mutex);
 int thread_mutex_lock(ThreadMutex *mutex);
+int thread_mutex_trylock(ThreadMutex *mutex);
 int thread_mutex_unlock(ThreadMutex *mutex);
 int thread_mutex_destroy(ThreadMutex *mutex);
 

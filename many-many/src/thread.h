@@ -27,7 +27,6 @@ struct ThreadMutex;
  * Required typedefs
  */
 typedef enum ThreadType ThreadType;
-typedef enum ThreadReturn ThreadReturn;
 typedef struct Thread *Thread;
 typedef struct ThreadSpinLock *ThreadSpinLock;
 typedef struct ThreadMutex *ThreadMutex;
@@ -52,6 +51,7 @@ int thread_join(Thread thread, ptr_t *ret);
 void thread_exit(ptr_t ret);
 Thread thread_self(void);
 int thread_yield(void);
+int thread_equal(Thread thread1, Thread thread2);
 void *thread_main(void *arg);
 
 /**

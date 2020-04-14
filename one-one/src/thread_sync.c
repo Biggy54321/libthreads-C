@@ -82,6 +82,52 @@ int thread_spin_lock(ThreadSpinLock *spinlock) {
 }
 
 /**
+ * @brief Tries to acquire the spinlock
+ *
+ * Acquires the spinlock if it is not acquired by any other thread. However if
+ * the thread is already acquired then the call does not block.
+ *
+ * @param[in] spinlock Pointer to the spinlock instance
+ */
+int thread_spin_trylock(ThreadSpinLock *spinlock) {
+
+    Thread thread;
+
+    /* Check for errors */
+    if (!(spinlock) ||           /* Pointer to spinlock is valid */
+        !(*spinlock)) {          /* The argument points to a structure */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
+
+    /* Get the thread handle */
+    thread = thread_self();
+
+    /* If the current thread is the owner */
+    if (spin_get_owner(*spinlock) == thread) {
+
+        return THREAD_SUCCESS;
+    }
+
+    /* Acquire the lock */
+    if (!spin_acq_lock(*spinlock)) {
+
+        /* Set the errno */
+        thread_errno = EBUSY;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
+
+    /* Set the owner to the current thread */
+    spin_set_owner(*spinlock, thread);
+
+    return THREAD_SUCCESS;
+}
+
+/**
  * @brief Releases the spinlock
  *
  * Releases the spinlock and sets the owner of the lock to no one.
@@ -228,6 +274,52 @@ int thread_mutex_lock(ThreadMutex *mutex) {
 
         /* Update the state */
         td_set_state(thread, THREAD_STATE_RUNNING);
+    }
+
+    /* Set the owner as the current thread */
+    mut_set_owner(*mutex, thread);
+
+    return THREAD_SUCCESS;
+}
+
+/**
+ * @brief Tries to acquire the mutex
+ *
+ * Acquires the mutex if it is not acquired by any other thread. However if
+ * the thread is already acquired then the call does not block.
+ *
+ * @param[in] mutex Pointer to the mutex instance
+ */
+int thread_mutex_trylock(ThreadMutex *mutex) {
+
+    Thread thread;
+
+    /* Check for errors */
+    if (!(mutex) ||           /* Pointer to mutex is valid */
+        !(*mutex)) {          /* The argument points to a structure */
+
+        /* Set the errno */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
+
+    /* Get the thread handle */
+    thread = thread_self();
+
+    /* If the current thread is the owner */
+    if (mut_get_owner(*mutex) == thread) {
+
+        return THREAD_SUCCESS;
+    }
+
+    /* If lock is not acquired */
+    if (!mut_acq_lock(*mutex)) {
+
+        /* Set the errno */
+        thread_errno = EACCES;
+        /* Return failure */
+        return THREAD_FAIL;
     }
 
     /* Set the owner as the current thread */

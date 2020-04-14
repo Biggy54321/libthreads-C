@@ -57,6 +57,7 @@ int thread_join(Thread thread, ptr_t *ret);
 void thread_exit(ptr_t ret);
 Thread thread_self(void);
 int thread_yield(void);
+int thread_equal(Thread thread1, Thread thread2);
 ptr_t thread_main(ptr_t arg);
 
 /**

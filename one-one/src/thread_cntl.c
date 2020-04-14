@@ -205,3 +205,17 @@ Thread thread_self(void) {
     /* Read the FS register value */
     return (Thread)get_fs();
 }
+
+/**
+ * @brief Checks if the two thread descriptors are same
+ * @param[in] thread1 First thread handle
+ * @param[in] thread2 Second thread handle
+ * @return 0 if not equal
+ * @return 1 if equal
+ */
+int thread_equal(Thread thread1, Thread thread2) {
+
+    /* Check if the two thread handles store the same value, which will
+     * be the address of the thread descriptor they are pointing to */
+    return (thread1 == thread2);
+}

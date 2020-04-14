@@ -121,6 +121,17 @@ int thread_yield(void);
 * The calling thread is then put to the end of the ready queue until it is again scheduled by the scheduler.
 * After rescheduling it returns to the statement after the yield function call.
 
+#### Thread equal
+
+```
+/* Check if the two thread objects are same */
+int thread_equal(Thread thread1, Thread thread2);
+```
+
+* As the thread object is an opaque datatype, the user would never know that
+  using equality operator would yield appropriate results.
+* This function returns zero if the two threads are not equal and one if they are equal. Equal means the two thread objects refer to the same thread.
+
 #### Thread main
 
 ```
