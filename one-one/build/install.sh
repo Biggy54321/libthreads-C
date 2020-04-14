@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/bash
 
 # Set the required vars
 BIN_DIR="../bin"

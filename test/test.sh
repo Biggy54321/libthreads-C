@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/bash
 
 # Gcc compilation flags
 # GCC_COMPILATION_FLAGS="-DBLOCK_DEBUG_PRINTS"
