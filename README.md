@@ -499,3 +499,18 @@ The library can be used on 64 bit systems only, as it uses a hardware feature wh
     ```
 
     * Sometimes the debug prints can be very irritating, hence to block all the debug prints in the test code output, open the **test.sh** file and uncomment the line **GCC_COMPILATION_FLAGS="-DBLOCK_DEBUG_PRINTS"**, which will block all the prints with **Debug:** prefix.
+
+## Navigating the source code
+
+The source code for each library is organized in the **src** directory. The source code should be read in the following order:
+
+* **thread.h**
+* **thread_errno.c**
+* **thread_descr.h**
+* **mmrll.c** (For many-many and hybrid libraries only)
+* **thread_cntl.c**
+* **thread_sig.c**
+* **thread_sync.h**
+* **thread_sync.c**
+* **mmsched.c** (For many-many and hybrid libraries only)
+* **mods** (Refer only if required)
