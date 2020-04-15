@@ -26,10 +26,10 @@ struct ThreadMutex;
 /**
  * Required typedefs
  */
-typedef enum ThreadType ThreadType;
 typedef struct Thread *Thread;
 typedef struct ThreadSpinLock *ThreadSpinLock;
 typedef struct ThreadMutex *ThreadMutex;
+typedef int ThreadOnce;
 typedef void *ptr_t;
 typedef void *(*thread_start_t)(void *);
 
@@ -42,6 +42,7 @@ int *__get_thread_errno_loc(void);
  * Required definitions
  */
 #define thread_errno (*__get_thread_errno_loc())
+#define THREAD_ONCE_INIT (-1)
 
 /**
  * Thread control routines
@@ -52,7 +53,8 @@ void thread_exit(ptr_t ret);
 Thread thread_self(void);
 int thread_yield(void);
 int thread_equal(Thread thread1, Thread thread2);
-void *thread_main(void *arg);
+int thread_once(ThreadOnce *once_control, void (*init_routine)(void));
+ptr_t thread_main(ptr_t arg);
 
 /**
  * Thread synchronization routines

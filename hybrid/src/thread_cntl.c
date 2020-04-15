@@ -478,3 +478,40 @@ int thread_equal(Thread thread1, Thread thread2) {
      * be the address of the thread descriptor they are pointing to */
     return (thread1 == thread2);
 }
+
+/**
+ * @brief Executes a function only once across multiple threads
+ *
+ * If a function wants to be executed only once across multiple threads, then
+ * even multiple calls to the following function will make sure that the
+ * required function is executed only once
+ *
+ * @param[in] once_control Pointer to the thread once type
+ * @param[in] init_routine Function to be executed only once
+ */
+int thread_once(ThreadOnce *once_control, void (*init_routine)(void)) {
+
+    /* Check for errors */
+    if (!init_routine) {
+
+        /* Set the error number */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
+
+    /* Atomically check for the value of thread once control variable */
+    if (atomic_cas(once_control, -1, 0)) {
+
+        /* Call the argument routine */
+        init_routine();
+    } else {
+
+        /* Set the error number */
+        thread_errno = EINVAL;
+        /* Return failure */
+        return THREAD_FAIL;
+    }
+
+    return THREAD_SUCCESS;
+}

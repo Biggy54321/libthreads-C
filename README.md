@@ -35,8 +35,9 @@ The library provides the following types to the application program:
 | **Thread**         | Thread descriptor (thread handle) which represents the thread in the application program. |
 | **ThreadSpinlock** | Thread spin lock used for synchronization                                                 |
 | **ThreadMutex**    | Thread mutex used for synchronization                                                     |
+| **ThreadOnce**     | Used for dynamic package initialization                                                   |
 
-All of the types provided by the library are **opaque**, i.e., their implementation is hidden from the user. This is done to prevent any smart IDE or text editor from knowing the implementation of the type and suggesting the members of the type to the application programmer.
+Some of the types provided by the library are **opaque**, i.e., their implementation is hidden from the user. This is done to prevent any smart IDE or text editor from knowing the implementation of the type and suggesting the members of the type to the application programmer.
 
 ### Return status
 
@@ -128,9 +129,25 @@ int thread_yield(void);
 int thread_equal(Thread thread1, Thread thread2);
 ```
 
-* As the thread object is an opaque datatype, the user would never know that
-  using equality operator would yield appropriate results.
+* As the thread object is an opaque datatype, the user would never know that using equality operator would yield appropriate results.
 * This function returns zero if the two threads are not equal and one if they are equal. Equal means the two thread objects refer to the same thread.
+
+#### Thread once
+
+```
+/* Initialize the once control object */
+ThreadOnce once = THREAD_ONCE_INIT;
+
+/* Execute initialization routine only one */
+int thread_once(ThreadOnce *once_control, void (*init_routine)(void));
+```
+
+* This function makes sure that function **init_routine** is called only once when used with the same first argument **once_control** in multiple invokation os the **thread_once** routine.
+* Before using the thread\_once routine the once\_control object should be initialized using the macro **THREAD_ONCE_INIT**, else the function may produce undefined results.
+* The function returns **THREAD_SUCCESS** when the init\_routine function is invoked.
+* On failure the function returns **THREAD_FAIL** and sets **thread_errno** as:
+
+    * *EINVAL*: If the init_routine argument is invalid or the function was already called once
 
 #### Thread main
 
