@@ -61,8 +61,8 @@ struct ThreadMutex {
     /* Owner thread */
     Thread owner;
 
-    /* Linked list of waiting threads */
-    List waitll;
+    /* Padding */
+    ptr_t __pad[2];
 
     /* Lock word */
     Lock lock;

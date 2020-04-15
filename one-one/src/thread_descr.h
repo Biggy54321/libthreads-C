@@ -31,10 +31,6 @@ enum {
 
     /* Thread is waiting to acquire the mutex */
     THREAD_STATE_WAIT_MUTEX,
-
-    /* Thread is waiting on a condition variable */
-    THREAD_STATE_WAIT_COND
-
 };
 
 /**
@@ -86,8 +82,7 @@ struct Thread {
 #define td_is_joined(thread)        ((thread)->state == THREAD_STATE_JOINED)
 #define td_is_waiting(thread)                           \
     (((thread)->state == THREAD_STATE_WAIT_JOIN) ||     \
-     ((thread)->state == THREAD_STATE_WAIT_MUTEX) ||    \
-     ((thread)->state == THREAD_STATE_WAIT_COND))
+     ((thread)->state == THREAD_STATE_WAIT_MUTEX))
 
 /**
  * Thread descriptor launch
