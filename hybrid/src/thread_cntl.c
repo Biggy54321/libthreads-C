@@ -117,6 +117,8 @@ static void _many_many_start(void) {
  */
 int thread_create(Thread *thread, thread_start_t start, ptr_t arg, int type) {
 
+    Thread curr_thread;
+
     /* Check for errors */
     if ((!thread) ||            /* Thread pointer is null */
         (!start) ||              /* Start function is null */
@@ -128,6 +130,9 @@ int thread_create(Thread *thread, thread_start_t start, ptr_t arg, int type) {
         /* Return failure */
         return THREAD_FAIL;
     }
+
+    /* Get the thread handle */
+    curr_thread = thread_self();
 
     /* If thread type is one one */
     if (type == THREAD_TYPE_ONE_ONE) {
@@ -179,6 +184,12 @@ int thread_create(Thread *thread, thread_start_t start, ptr_t arg, int type) {
         /* Create the thread */
         td_mm_create(*thread, _many_many_start);
 
+        /* Disable interrupts if current thread is many many */
+        if (td_is_many_many(curr_thread)) {
+
+            td_mm_disable_intr(curr_thread);
+        }
+
         /* Acquire the many ready list lock */
         mmrll_lock();
 
@@ -187,6 +198,12 @@ int thread_create(Thread *thread, thread_start_t start, ptr_t arg, int type) {
 
         /* Release the many ready list lock */
         mmrll_unlock();
+
+        /* Disable interrupts if current thread is many many */
+        if (td_is_many_many(curr_thread)) {
+
+            td_mm_enable_intr(curr_thread);
+        }
     }
 
     return THREAD_SUCCESS;

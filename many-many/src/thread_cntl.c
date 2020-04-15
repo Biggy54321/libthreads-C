@@ -67,6 +67,8 @@ static void _many_many_start(void) {
  */
 int thread_create(Thread *thread, thread_start_t start, ptr_t arg) {
 
+    Thread curr_thread;
+
     /* Check for errors */
     if ((!thread) ||            /* If thread descriptor is not valid */
         (!start)) {             /* If start function is not valid */
@@ -76,6 +78,9 @@ int thread_create(Thread *thread, thread_start_t start, ptr_t arg) {
         /* Return failure */
         return THREAD_FAIL;
     }
+
+    /* Get the current thread handle */
+    curr_thread = thread_self();
 
     /* Allocate the thread descriptor */
     (*thread) = td_alloc();
@@ -94,6 +99,9 @@ int thread_create(Thread *thread, thread_start_t start, ptr_t arg) {
     /* Initialize the start routine context */
     td_init_cxt(*thread, _many_many_start);
 
+    /* Disable the interrupts */
+    td_disable_intr(curr_thread);
+
     /* Acquire the many ready list lock */
     mmrll_lock();
 
@@ -102,6 +110,9 @@ int thread_create(Thread *thread, thread_start_t start, ptr_t arg) {
 
     /* Release the many ready list lock */
     mmrll_unlock();
+
+    /* Enabe the interrupts */
+    td_enable_intr(curr_thread);
 
     return THREAD_SUCCESS;
 }

@@ -416,6 +416,9 @@ int thread_mutex_unlock(ThreadMutex *mutex) {
         /* Set the owner as the wait thread */
         mut_set_owner(*mutex, wait_thread);
 
+        /* Disable interrupts */
+        td_disable_intr(thread);
+
         /* Acquire the many list lock */
         mmrll_lock();
 
@@ -424,6 +427,9 @@ int thread_mutex_unlock(ThreadMutex *mutex) {
 
         /* Acquire the many list lock */
         mmrll_unlock();
+
+        /* Enable interrupts */
+        td_enable_intr(thread);
     } else {
 
         /* Set the owner to none */
