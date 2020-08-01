@@ -66,12 +66,6 @@ int thread_spin_lock(ThreadSpinLock *spinlock) {
     /* Get the thread handle */
     thread = thread_self();
 
-    /* If the current thread is the owner */
-    if (spin_get_owner(*spinlock) == thread) {
-
-        return THREAD_SUCCESS;
-    }
-
     /* While the lock is not acquired */
     while (!spin_acq_lock(*spinlock));
 
@@ -105,12 +99,6 @@ int thread_spin_trylock(ThreadSpinLock *spinlock) {
 
     /* Get the thread handle */
     thread = thread_self();
-
-    /* If the current thread is the owner */
-    if (spin_get_owner(*spinlock) == thread) {
-
-        return THREAD_SUCCESS;
-    }
 
     /* Acquire the lock */
     if (!spin_acq_lock(*spinlock)) {
@@ -257,12 +245,6 @@ int thread_mutex_lock(ThreadMutex *mutex) {
     /* Get the thread handle */
     thread = thread_self();
 
-    /* If the current thread is the owner */
-    if (mut_get_owner(*mutex) == thread) {
-
-        return THREAD_SUCCESS;
-    }
-
     /* While the lock is not acquired */
     while (!mut_acq_lock(*mutex)) {
 
@@ -306,12 +288,6 @@ int thread_mutex_trylock(ThreadMutex *mutex) {
 
     /* Get the thread handle */
     thread = thread_self();
-
-    /* If the current thread is the owner */
-    if (mut_get_owner(*mutex) == thread) {
-
-        return THREAD_SUCCESS;
-    }
 
     /* If lock is not acquired */
     if (!mut_acq_lock(*mutex)) {
